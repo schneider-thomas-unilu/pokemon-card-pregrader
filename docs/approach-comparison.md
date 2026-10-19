@@ -21,7 +21,11 @@ A specialized image model is trained or fine-tuned to detect specific defects, s
 
 ## Preliminary Decision
 
-We will initially investigate a hosted vision AI API because it allows us to prototype the application without first building a large labeled training dataset. The final decision will depend on experiment results, measured latency, estimated operating costs, and feasibility.
+The provisional choice for the MVP is a hosted vision AI API because it allows us to prototype the application without first building a large labeled training dataset.
+
+The completed one-card pilot used ChatGPT's vision interface manually; it did not test a hosted model API programmatically. Therefore, the pilot does not establish that the API approach is more accurate or cost-effective than a custom computer-vision model.
+
+The decision will be reviewed after testing more cards and evaluating output quality, measured latency, estimated operating costs, and implementation feasibility.
 
 ## Switching Criteria
 
