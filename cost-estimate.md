@@ -1,7 +1,7 @@
 # First Cost Estimate — Pokémon Card PreGrader
 
 **Pricing checked:** 19 October 2026  
-**Proposed model:** Gemini 3.7 Flash, standard paid tier  
+**Proposed model:** Gemini 3.8 Flash, standard paid tier  
 **Source:** [Official Gemini API pricing](https://ai.google.dev/gemini-api/docs/pricing)
 
 ## Estimated cost for one card analysis
@@ -19,6 +19,8 @@ These token counts are assumptions, not measured usage. Actual image token usage
 | **Total per analysis** | Input + output | **$0.003375** |
 
 This is approximately **0.34 US cents per analysis**, before any other operating costs.
+
+From 1 January 2027, the standard paid rates are $1.50 per million input tokens and $7.50 per million output tokens. With the same assumed token usage, the estimated cost becomes $0.00675 per analysis.
 
 ## Estimated usage scenarios
 
