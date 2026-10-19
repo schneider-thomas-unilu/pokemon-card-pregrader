@@ -39,3 +39,7 @@ The initial cost estimate uses assumed input/output token counts and must be che
 ## Key limitations
 
 Glare and blur can hide defects; model results may be inconsistent; and image-based estimates cannot guarantee a professional grade or resale value. Reconsider the approach if evaluation on at least 30 varied cards shows inadequate reliability, cost or latency exceeds the target budget, or an alternative performs better under a controlled comparison.
+
+## Current project status
+
+The repository, planning documents, and initial experiment files have been prepared. A preliminary one-card experiment has been documented, but broader testing, customer interviews, and a working application prototype remain future work. The hosted vision API remains a provisional choice rather than a validated final decision.
