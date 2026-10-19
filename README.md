@@ -8,7 +8,7 @@ Assessing card condition takes time, and professional grading costs money. This 
 
 ## Project status
 
-This is an early-stage experiment, not a production application. The initial pilot covers one card and two manually recorded reference defect labels. Both were detected, giving a preliminary recall of 100% on this single-card sample. This result is too limited to establish general accuracy.
+This is an early-stage experiment, not a production application. The initial pilot covers one card and two manually recorded reference defect labels. Both were detected, giving a preliminary recall of 100% on these two labels. This very small sample does not establish general accuracy.
 
 ## Repository structure
 
@@ -29,4 +29,17 @@ Start with the [experiment README](experiment/README.md). The notebook was devel
 
 ## Limitations
 
-The pilot uses one card and one person's reference labels. Photo quality, glare, and viewing angle can affect observations. The app cannot guarantee a professional grade or resale
+The pilot uses one card and reference labels created by one person. Photo quality, glare, and viewing angle can affect observations. The app cannot guarantee a professional grade, card authenticity, or resale value.
+
+## Future work
+
+- Test at least 10 varied card photos.
+- Improve reference labels through independent review.
+- Compare approaches using the same images and evaluation criteria.
+- Measure API cost and latency using a direct API experiment.
+- Build a minimal photo-upload and results prototype.
+- Validate customer needs through interviews.
+
+## Disclaimer
+
+This project provides preliminary educational experimentation only. It does not provide official grading, authentication, or financial guarantees.
