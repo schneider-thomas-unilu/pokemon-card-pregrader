@@ -1,0 +1,5 @@
+model,image_id,defect,detected
+ChatGPT vision,card_01,centering,yes
+ChatGPT vision,card_01,corner_wear,yes
+ChatGPT vision,card_01,edge_wear,yes
+ChatGPT vision,card_01,surface_scratch,yes
