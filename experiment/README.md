@@ -7,21 +7,20 @@ This experiment explores whether a vision-capable AI can identify visible defect
 ## Files
 
 - `pokemon_card_pregrader_experiment.ipynb` — Google Colab notebook containing the experiment code.
-- `experiment-plan.md` — plan for the experiment and its evaluation.
+- `experiment-plan.md` — experiment objectives, procedure, and evaluation metric.
 - `reference_defects.csv` — manually recorded reference defects.
-- `predictions.csv` — defects reported by the AI assessment.
+- `predictions.csv` — defects recorded from the AI assessment.
 - `experiment_report.md` — experiment method, result, and limitations.
-- `EXPERIMENT_README.md` — additional experiment setup and reproduction notes.
 
 ## How to reproduce the pilot
 
 1. Open `pokemon_card_pregrader_experiment.ipynb` in Google Colab.
 2. Run the notebook cells in order.
-3. Upload a suitable card photograph when prompted.
-4. Review the manually recorded reference labels and the recorded AI assessment.
+3. Upload the card photograph when prompted.
+4. Review the manually recorded reference labels and recorded AI assessment.
 5. Run the comparison cell to calculate preliminary defect recall.
 
-The notebook uses Python and pandas for dataset handling. The original AI assessment was performed manually through ChatGPT's vision interface; the notebook does not call a model API to generate predictions automatically.
+The notebook uses Python and pandas for dataset handling. The original AI assessment was performed manually through ChatGPT's vision interface. The notebook does not automatically call a model API to generate predictions.
 
 ## Initial result
 
