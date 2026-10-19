@@ -26,4 +26,4 @@ Start with a hosted vision AI model because it avoids training a custom model be
 
 ## Important limitations
 
-The system may miss subtle defects, confuse reflections with scratches, or produce inconsistent results across different photos. It must not present its output as an official grade or guarantee a card's resale value.
+The system may miss subtle defects, confuse reflections with scratches, or produce inconsistent results across different photos. It must not present its output as an official grade or guarantee a card's resale value. Any confidence score returned by the AI is an estimate and may not correspond to a verified probability that a defect is present.
