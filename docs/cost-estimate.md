@@ -7,7 +7,7 @@
 ## Estimated cost for one card analysis
 
 For an initial planning estimate, assume one analysis uses:
-- 2,000 input tokens, including the image and instructions
+- 2,000 total input tokens, including the image's billed token usage and text instructions. This is a planning assumption; actual image token usage depends on how the API processes the image.
 - 500 output tokens for the structured defect report
 
 These token counts are assumptions, not measured usage. Actual image token usage and output length may differ.
