@@ -26,9 +26,9 @@ Compare alternatives using the same images, reference labels, prompts where appl
 
 Dates below are proposed planning targets, not completed work.
 
-| Task | Owner | Target date |
+| **Task** | **Owner** | **Target date** |
 |---|---|---|
-| Review and improve the initial experiment labels | Project owner | 21 Oct 2026 |
+| Collect additional card photos and prepare reference labels | Project owner | 21 Oct 2026 |
 | Test at least 10 varied card photos and record results | Project owner | 24 Oct 2026 |
 | Compare hosted-model options and verify API pricing | Project owner | 27 Oct 2026 |
 | Build a minimal photo-upload and results prototype | Project owner | 3 Nov 2026 |
