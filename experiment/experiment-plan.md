@@ -1,17 +1,23 @@
 # Pokémon Card PreGrader — Experiment
 
 ## Objective
+
 Evaluate whether a vision AI model can identify visible Pokémon card defects from photographs.
 
 ## Research question
+
 Can a vision AI model consistently identify visible centering issues, corner wear, edge wear, and surface damage in Pokémon card images?
 
 ## Dataset
-We plan to use 10 or more Pokémon card photographs representing different card conditions and image qualities.
 
-No experiment results are claimed until the model has been run on the images.
+The initial pilot used one Pokémon card photograph and two manually recorded reference defect labels.
+
+The planned extended evaluation will use 10 or more Pokémon card photographs representing different card conditions and image qualities.
+
+No conclusions about general model accuracy will be drawn from the single-card pilot.
 
 ## Procedure
+
 1. Assign each image a unique ID.
 2. Inspect the image manually and record clearly visible defects.
 3. Submit the same image to the selected vision model using a standardized prompt.
@@ -20,6 +26,7 @@ No experiment results are claimed until the model has been run on the images.
 6. Document the findings and limitations.
 
 ## Evaluation metric
+
 Defect recall = correctly detected reference defects / total reference defects × 100.
 
 A defect counts as correctly detected when the model identifies the same defect category in the same image.
@@ -27,9 +34,13 @@ A defect counts as correctly detected when the model identifies the same defect 
 If the reference checklist contains no defects, recall cannot be calculated for that image.
 
 ## Experiment status
-Preparation in progress. Images, model outputs, and measured results still need to be recorded.
+
+A preliminary one-card pilot has been completed. The AI assessment identified both of the two manually recorded reference defects, giving a preliminary defect recall of 100% (2/2).
+
+This result is based on only one image and is not evidence of general model accuracy. The extended evaluation remains to be completed.
 
 ## Limitations
+
 - Photographs may hide defects because of glare, lighting, or camera angles.
 - Manual reference labels may be imperfect.
-- Visible defect detection does not establish an official professional grade.
+- The initial AI assessment
