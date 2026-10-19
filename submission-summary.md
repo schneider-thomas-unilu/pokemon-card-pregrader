@@ -4,6 +4,14 @@
 
 Pokémon card resellers need to decide whether a card is worth submitting for professional grading. Evaluating visible defects takes time, and grading fees can make a submission unprofitable. The proposed app helps resellers and collectors inspect card photos and make a more informed preliminary decision.
 
+## Customer discovery, alternatives, and business model
+
+**Customer discovery:** Interview outreach has been prepared, but no responses have been received yet. The need for this solution and willingness to pay remain hypotheses to validate with Pokémon card resellers and collectors.
+
+**Alternatives:** Users can inspect cards manually, use professional grading services, or explore existing card-scanning tools such as SnapCard. The proposed differentiator is a transparent explanation of possible visible defects combined with an estimate of whether professional grading may be financially worthwhile. This differentiation still needs validation against alternatives.
+
+**Proposed monetization:** Start with a free tier supported by advertising, then test a subscription for frequent sellers and a one-time purchase option. These are hypotheses, not validated revenue models; interviews and user testing should determine which, if any, customers prefer.
+
 ## Proposed solution and value proposition
 
 The user uploads a card photo. A vision AI model identifies possible centering issues, corner wear, edge wear, and surface scratches, then provides observations, confidence, and image-quality warnings. An optional calculator compares estimated resale value with grading and other costs. The app provides preliminary guidance, not an official grade or a guarantee of value.
