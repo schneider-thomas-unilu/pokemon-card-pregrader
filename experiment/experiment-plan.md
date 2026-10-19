@@ -43,4 +43,6 @@ This result is based on only one image and is not evidence of general model accu
 
 - Photographs may hide defects because of glare, lighting, or camera angles.
 - Manual reference labels may be imperfect.
-- The initial AI assessment
+- The initial AI assessment was performed through ChatGPT's vision interface rather than a controlled API benchmark.
+- A small dataset cannot establish reliable performance across different cards and conditions.
+- Visible defect detection does not establish an official professional grade.
