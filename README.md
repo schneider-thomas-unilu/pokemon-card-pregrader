@@ -1,26 +1,32 @@
 # Pokémon Card PreGrader
 
-## Project Overview
-Pokémon Card PreGrader is an AI-assisted application designed to help trading card resellers evaluate the visible condition of Pokémon cards and estimate whether professional grading is financially worthwhile.
+An AI-assisted prototype concept for identifying possible visible defects in Pokémon cards and helping collectors and resellers decide whether professional grading may be worthwhile.
 
 ## Problem
-Resellers must make purchasing decisions quickly, often without knowing a card's exact condition. Incorrect assessments can lead to unnecessary grading expenses and reduced profits.
 
-## Proposed Solution
-The application analyzes uploaded card images to identify potential defects, estimate a preliminary grade range, and support financial decisions using grading fees and expected resale values.
+Assessing card condition takes time, and professional grading costs money. This project explores whether vision AI can provide useful preliminary observations about centering, corner wear, edge wear, and surface scratches.
 
-## Technology Evaluation
-We will compare two candidate approaches:
-1. A hosted vision AI API.
-2. A custom computer-vision model.
+## Project status
 
-The final choice will be based on experimental results, cost, latency, data requirements, and maintainability.
+This is an early-stage experiment, not a production application. The initial pilot covers one card and two manually recorded reference defect labels. Both were detected, giving a preliminary recall of 100% on this single-card sample. This result is too limited to establish general accuracy.
+
+## Repository structure
+
+- [`docs/`](docs/README.md) — approach comparison, architecture, cost estimate, MVP plan, and submission summary.
+- [`experiment/`](experiment/README.md) — experiment notebook, reference labels, recorded predictions, and report.
+
+## Main documents
+
+- [Submission summary](docs/submission-summary.md)
+- [Approach comparison](docs/approach-comparison.md)
+- [Architecture sketch](docs/architecture.md)
+- [Cost estimate](docs/cost-estimate.md)
+- [Decision and MVP plan](docs/decision-and-mvp-plan.md)
 
 ## Experiment
-We will evaluate defect detection on a labeled set of Pokémon card images. Results and the evaluation method will be documented here.
+
+Start with the [experiment README](experiment/README.md). The notebook was developed in Google Colab. The experiment used ChatGPT's vision interface manually; it did not call a model API directly.
 
 ## Limitations
-AI-generated estimates are not official grades. Image quality, subtle defects, and uncertainty in resale prices may affect the results.
 
-## Project Status
-In progress — repository and initial evaluation setup.
+The pilot uses one card and one person's reference labels. Photo quality, glare, and viewing angle can affect observations. The app cannot guarantee a professional grade or resale
