@@ -65,6 +65,7 @@ Tier 1 Independent:
    * Up to 50 AI pre-grades per month
    * Standard condition analysis (surface, corners, edges, centering)
    * Estimated ROI & grading cost-benefit calculator (PSA/CGC fee tables built-in)
+     
 Tier 2 Professional:
 * Target: Full-time professional resellers processing regular batches of cards weekly.
 * Price: 49€ / month
@@ -74,6 +75,7 @@ Tier 2 Professional:
    * Advanced high-resolution defect detection (micro-scratches, subtle surface dents)
    * Batch scanning mode (scan multiple cards in succession quickly)
    * Live market pricing integration (estimated raw vs. graded value comparison)
+     
 Tier 3 Business Tier:
 * Target User: High-volume card shops, team-based operations, or major online sellers.
 * Price: 149 € / month (or 1,430 € / year – approx. 119 €/mo billed annually)
