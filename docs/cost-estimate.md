@@ -1,43 +1,31 @@
 # First Cost Estimate — Pokémon Card PreGrader
 
-**Pricing checked:** 19 October 2026  
-**Proposed model:** Gemini 3.8 Flash, standard paid tier  
-**Source:** [Official Gemini API pricing](https://ai.google.dev/gemini-api/docs/pricing)
+**Price checked:** 29 October 2026
+**Chosen service:** Gemini 3.8 Flash API, standard paid tier
+**Official sources:** [Gemini API pricing](https://ai.google.dev/gemini-api/docs/pricing) and [Gemini 3.8 Flash model page](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash)
 
-## Estimated cost for one card analysis
+The official pricing page lists Gemini 3.8 Flash standard paid rates through 31 December 2026 of **$0.75 per 1 million input tokens** and **$3.75 per 1 million output tokens**. It lists free-of-charge input/output on the free tier, subject to model availability and usage limits; the free-tier terms state that submitted content may be used to improve Google's products. Confirm terms and rates before using real customer photos or launching.
 
-For an initial planning estimate, assume one analysis uses:
-- 2,000 total input tokens, including the image's billed token usage and text instructions. This is a planning assumption; actual image token usage depends on how the API processes the image.
-- 500 output tokens for the structured defect report
+## Estimated cost for one user action
 
-These token counts are assumptions, not measured usage. Actual image token usage and output length may differ.
+One action is one photo analysis. For a planning estimate, assume 2,000 total input tokens (image plus instructions) and 500 output tokens (structured findings). These are assumptions, not measured usage.
 
-| Item | Calculation | Estimated cost |
-|---|---|---:|
-| Input | 2,000 ÷ 1,000,000 × $0.75 | $0.0015 |
+| Item | Arithmetic | Estimated cost |
+|---|---:|---:|
+| Input | 2,000 ÷ 1,000,000 × $0.75 | $0.001500 |
 | Output | 500 ÷ 1,000,000 × $3.75 | $0.001875 |
-| **Total per analysis** | Input + output | **$0.003375** |
+| **Total per analysis** | $0.001500 + $0.001875 | **$0.003375** |
 
-This is approximately **0.34 US cents per analysis**, before any other operating costs.
+That is about **0.34 US cents per analysis**. The same token assumptions at the published rates starting 1 January 2027 ($1.50 input and $7.50 output per million tokens) give **$0.00675** per analysis.
 
-From 1 January 2027, the standard paid rates are $1.50 per million input tokens and $7.50 per million output tokens. With the same assumed token usage, the estimated cost becomes $0.00675 per analysis.
-
-## Estimated usage scenarios
-
-| Analyses | Estimated AI cost |
+| Analyses | Current-rate estimate |
 |---:|---:|
 | 100 | $0.34 |
 | 1,000 | $3.38 |
 | 10,000 | $33.75 |
 
-Figures are rounded and assume the same token usage and prices for every analysis.
+The experiment script records token usage returned by the API and request latency for each photo. Replace the assumed token counts with actual API usage before using this estimate for a business decision.
 
-## Important exclusions and assumptions
+## Exclusions
 
-- This estimate covers model input and output only.
-- It excludes hosting, storage, development, taxes, and other services.
-- The estimate assumes paid-tier pricing; free-tier eligibility and conditions may differ.
-- Actual usage must be measured in a real API experiment before this estimate is used for business decisions.
-- Pricing may change, so it should be checked again before launch.
-
-The existing experiment used ChatGPT's vision interface, not the Gemini API. Therefore, it provides no measured Gemini API cost or latency.
+This estimate excludes hosting, image storage, development, human review, taxes, and market-data fees. It also excludes any costs arising from retries. The model’s tokenization of an image depends on the image and API processing, so 2,000 input tokens is not a guarantee or limit.

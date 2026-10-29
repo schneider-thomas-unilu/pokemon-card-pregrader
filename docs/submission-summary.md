@@ -1,45 +1,41 @@
-# Pokémon Card PreGrader — Digital Transformation Project
+# Pokémon Card PreGrader — Project Summary
 
-## Problem and target users
+## Problem and target user
 
-Pokémon card resellers need to decide whether a card is worth submitting for professional grading. Evaluating visible defects takes time, and grading fees can make a submission unprofitable. The proposed app helps resellers and collectors inspect card photos and make a more informed preliminary decision.
+Pokémon card resellers must decide whether an ungraded card is worth buying or submitting for professional grading. Fees, shipping, time, and uncertain condition can turn a poor decision into a loss. The proposed tool is for resellers and collectors who want a transparent preliminary inspection and a grading-versus-raw-sale calculation.
 
-## Customer discovery, alternatives, and business model
+## Customer discovery and alternatives
 
-**Customer discovery:** Interview outreach has been prepared, but no responses have been received yet. The need for this solution and willingness to pay remain hypotheses to validate with Pokémon card resellers and collectors.
+No reseller interviews have been completed yet. Customer needs, willingness to pay, and decision thresholds remain hypotheses; three interviews are planned by 6 November 2026.
 
-**Alternatives:** Users can inspect cards manually, use professional grading services, or explore existing card-scanning tools such as SnapCard. The proposed differentiator is a transparent explanation of possible visible defects combined with an estimate of whether professional grading may be financially worthwhile. This differentiation still needs validation against alternatives.
+Alternatives include manual inspection, direct professional grading, and existing card-scanning tools. The proposed differentiator is a marked-up photo, explicit uncertainty, geometry-based centering, and a profit comparison ending in a practical send/sell recommendation. This differentiator still needs validation with users.
 
-**Proposed monetization:** Start with a free tier supported by advertising, then test a subscription for frequent sellers and a one-time purchase option. These are hypotheses, not validated revenue models; interviews and user testing should determine which, if any, customers prefer.
+## Candidate approaches and current decision
 
-## Proposed solution and value proposition
+The team compared a hosted vision API with a custom computer-vision model. For the MVP, the provisional choice is Gemini 3.8 Flash for qualitative surface/corner/edge observations, visible card bends or creases, and other visible issues such as stains or print defects, while code measures centering from image geometry. “Other visible issue” excludes ordinary card design and the named categories. A single front photo cannot rule out hidden bending. A provider adapter limits lock-in. A larger labeled set and user interviews may change this choice.
 
-The user uploads a card photo. A vision AI model identifies possible centering issues, corner wear, edge wear, and surface scratches, then provides observations, confidence, and image-quality warnings. An optional calculator compares estimated resale value with grading and other costs. The app provides preliminary guidance, not an official grade or a guarantee of value.
+## Experiment status and evidence
 
-## Approaches considered
+The existing manual ChatGPT-interface pilot used one card and two reference defects. The recorded response identified both, but it also reported centering and edge wear absent from the reference. Counting those unlisted categories as negatives gives 2 true positives and 2 false positives: 50% precision and 100% recall on one card. Reference labels were made by one person, so this is not reliable accuracy evidence.
 
-**Hosted vision AI API:** Faster to prototype and does not require a custom labeled training dataset, but may have recurring usage costs and inconsistent results.
+A separate script now calls Gemini directly, records token usage and latency, and calculates per-defect TP/FP/FN for five categories, including card bending and other visible issues. Ten photos and five-category reference labels are present. The experiment has not yet completed because Gemini returned a transient HTTP 503; retry the API run and record the results before presenting an outcome.
 
-**Custom computer-vision model:** Offers more control over training and evaluation, but requires a larger labeled dataset and additional development work.
+## First architecture
 
-The initial preference is a hosted model for the MVP. The experiment so far is only a one-card pilot using ChatGPT's vision interface, so it does not establish which approach performs best.
+Photo upload → photo-quality gate → code-based centering measurement plus hosted qualitative defect detection → marked-up result with confidence and grade range → raw-versus-grading profit calculation → "send for grading" or "sell raw." Poor photos receive retake guidance. The grade estimate is explicitly not official.
 
-## Experiment and evidence
+## First cost estimate
 
-The initial pilot used one Pokémon card photo. Two defects were manually recorded as reference labels, and the vision response identified both, giving a preliminary defect recall of 2/2 (100%). This result is highly limited: the reference labels were created by one person, the sample contains only one card, and the experiment did not test a direct model API. It is not evidence of general accuracy or official-grade prediction.
+As checked 29 October 2026, Gemini 3.8 Flash standard paid rates are $0.75 per million input tokens and $3.75 per million output tokens through 31 December 2026. Assuming 2,000 input tokens and 500 output tokens, one action is estimated at $0.003375. The experiment will record actual token use; photo tokenization and output size can differ from the planning assumptions.
 
-## Initial architecture
+## Limitations and next steps
 
-Photo upload → image-quality checks → backend → hosted vision model adapter → structured defect report → optional grading-value calculator. The adapter keeps the model provider replaceable.
+1. Glare, blur, cropping, and viewing angle can obscure defects.
+2. Current reference labels and pilot evidence are too small and subjective to establish accuracy.
+3. Image analysis cannot guarantee an official grade or resale profit.
 
-## Cost and next steps
+Next: interview resellers; gather 10–20 permissioned, labeled photos; run the API experiment; implement photo rejection and geometry-based centering; then test the marked-up result and profit recommendation with users. Switch approaches if measured reliability, cost, latency, privacy, or user feedback fails agreed targets.
 
-The initial cost estimate uses assumed input/output token counts and must be checked against current provider pricing. Next steps are to test more varied card photos, improve independently reviewed reference labels, measure actual API cost and latency, and build a minimal upload-and-results prototype.
+## Proposed task ownership and dates
 
-## Key limitations
-
-Glare and blur can hide defects; model results may be inconsistent; and image-based estimates cannot guarantee a professional grade or resale value. Reconsider the approach if evaluation on at least 30 varied cards shows inadequate reliability, cost or latency exceeds the target budget, or an alternative performs better under a controlled comparison.
-
-## Current project status
-
-The repository, planning documents, and initial experiment files have been prepared. A preliminary one-card experiment has been documented, but broader testing, customer interviews, and a working application prototype remain future work. The hosted vision API remains a provisional choice rather than a validated final decision.
+Assignments are proposed, not accepted or completed. See the [MVP plan](decision-and-mvp-plan.md) for named owners and target dates from 3–27 November 2026.

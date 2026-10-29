@@ -1,3 +1,51 @@
-image_id,defect,notes
-card_01,surface_scratch,"The surface is severely scratched, and the corners are worn as well"
-card_01,corner_wear,"The corners are worn, based on my visual inspection."
+image_id,defect,present,notes
+1,corner_wear,true,Top left corner shows signs of wear.
+1,edge_wear,false,No clear edge wear visible.
+1,surface_scratch,false,No clear surface scratches.
+2,corner_wear,false,No clear corner wear visible; provisional.
+2,edge_wear,false,No clear edge wear visible; provisional.
+2,surface_scratch,uncertain,Strong glare across the holographic surface.
+3,corner_wear,true,Top left corner shows signs of wear.
+3,edge_wear,true,No clear edge wear visible; provisional.
+3,surface_scratch,false,No distinct scratch visible in the photo; provisional.
+4,corner_wear,false,No clear corner wear visible.
+4,edge_wear,false, No edge wear visible.
+4,surface_scratch,true,Thin scratch horizontally on the top half of the card.
+5,corner_wear,false,No clear corner wear visible; provisional.
+5,edge_wear,false,No clear edge wear visible; provisional.
+5,surface_scratch,false,No sign of scratches.
+6,corner_wear,false,No clear corner wear visible.
+6,edge_wear,false,No clear edge wear visible.
+6,surface_scratch,false,No distinct surface scratch visible in the photographed area; provisional.
+7,corner_wear,true,Corner wear visible.
+7,edge_wear,true,Clear wear on all the edges.
+7,surface_scratch,true,Multiple distinct linear marks cross the card face; provisional visual label.
+8,corner_wear,false,No clear corner wear visible; provisional.
+8,edge_wear,false,No clear edge wear visible; provisional.
+8,surface_scratch,true,Visible scratches on the card.
+9,corner_wear,false,No clear corner wear visible; provisional.
+9,edge_wear,false,No clear edge wear visible; provisional.
+9,surface_scratch,uncertain,Strong reflections obscure parts of the surface.
+10,corner_wear,false,No clear corner wear visible; provisional.
+10,edge_wear,true,Slight edge wear visible on the top of the card.
+10,surface_scratch,uncertain,Glare obscures portions of the holographic surface.
+1,card_bending,false,No signs of bending.
+2,card_bending,false,No signs of bending.
+3,card_bending,true,Card bent on the bottom right side.
+4,card_bending,false,No signs of bending.
+5,card_bending,false,No signs of bending.
+6,card_bending,false,No visible signs of bending.
+7,card_bending,true,Card shows visible signs of bending.
+8,card_bending,false,No visible signs of bending.
+9,card_bending,false,No visible signs of bending.
+10,card_bending,false,No visible signs of bending.
+1,other_visible_issue,false,No other visible issues.
+2,other_visible_issue,false,No other visible issues.
+3,other_visible_issue,false,No other visible issues.
+4,other_visible_issue,false,No other visible issues.
+5,other_visible_issue,true,Card ripped on in the middle left side.
+6,other_visible_issue,false,No other visible issues.
+7,other_visible_issue,true,Overall badly damaged card.
+8,other_visible_issue,true,Shows clear signs of tampering.
+9,other_visible_issue,false,No other visible issues.
+10,other_visible_issue,false,No other visible issues.

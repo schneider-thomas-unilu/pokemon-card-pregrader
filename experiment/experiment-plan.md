@@ -1,48 +1,32 @@
-# Pokémon Card PreGrader — Experiment
-
-## Objective
-
-Evaluate whether a vision AI model can identify visible Pokémon card defects from photographs.
+# Pokémon Card PreGrader — Experiment Plan
 
 ## Research question
 
-Can a vision AI model consistently identify visible centering issues, corner wear, edge wear, and surface damage in Pokémon card images?
+On 10–20 permissioned card photographs, how often does Gemini 3.8 Flash correctly identify visible corner wear, edge wear, surface scratches, bending/creases, and other visible issues such as stains or print defects, and how often does it invent a defect?
 
-## Dataset
+## Cases and labels
 
-The initial pilot used one Pokémon card photograph and two manually recorded reference defect labels.
-
-The planned extended evaluation will use 10 or more Pokémon card photographs representing different card conditions and image qualities.
-
-No conclusions about general model accuracy will be drawn from the single-card pilot.
+- One case is one card photo with a unique `image_id`.
+- The planned dataset is 10–20 different cards, with varied but usable lighting and condition.
+- Two reviewers should label visible reference defects before seeing model output; resolve disagreements and keep notes.
+- `reference_defects.csv` must explicitly label all five categories on every image as `true`, `false`, or `uncertain`; uncertain pairs are omitted from metric denominators.
+- For `card_bending`, label visible creases, folds, or warping only. Request angled and reverse-side views where possible; a straight-on front image cannot establish that a card is flat.
+- For `other_visible_issue`, label only physical or print issues not already covered by the named categories; ordinary card design is not a defect.
+- Centering is excluded from model assessment and reserved for code-based geometric measurement.
 
 ## Procedure
 
-1. Assign each image a unique ID.
-2. Inspect the image manually and record clearly visible defects.
-3. Submit the same image to the selected vision model using a standardized prompt.
-4. Save the model's complete output.
-5. Compare the model's detected defects with the reference checklist.
-6. Document the findings and limitations.
+1. Create a 10–20-row `cases.csv` manifest and check that all photos show the whole card.
+2. Agree and record reference labels before sending images to the API.
+3. Run `run_experiment.py` with the Gemini API key supplied through the environment.
+4. Save the raw category decisions, evidence, confidence, token counts, and latency in the generated predictions CSV.
+5. Review errors and report TP, FP, FN, precision, and recall for every defect category.
+6. Preserve the dataset version, prompt, model ID, date, and pricing assumptions with the result.
 
-## Evaluation metric
+## Current status
 
-Defect recall = correctly detected reference defects / total reference defects × 100.
-
-A defect counts as correctly detected when the model identifies the same defect category in the same image.
-
-If the reference checklist contains no defects, recall cannot be calculated for that image.
-
-## Experiment status
-
-A preliminary one-card pilot has been completed. The AI assessment identified both of the two manually recorded reference defects, giving a preliminary defect recall of 100% (2/2).
-
-This result is based on only one image and is not evidence of general model accuracy. The extended evaluation remains to be completed.
+The evaluator and offline tests are implemented, and ten photos plus five-category labels are present. The API experiment has not completed; the one-card ChatGPT pilot is separate and is described in the [experiment report](experiment_report.md).
 
 ## Limitations
 
-- Photographs may hide defects because of glare, lighting, or camera angles.
-- Manual reference labels may be imperfect.
-- The initial AI assessment was performed through ChatGPT's vision interface rather than a controlled API benchmark.
-- A small dataset cannot establish reliable performance across different cards and conditions.
-- Visible defect detection does not establish an official professional grade.
+Manual defect labels may still be subjective. A small convenience sample does not establish performance across all card types, conditions, or photo quality. Model confidence is self-reported and not calibrated. No vision output is an official grade.

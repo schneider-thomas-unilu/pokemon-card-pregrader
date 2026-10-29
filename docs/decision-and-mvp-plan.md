@@ -2,39 +2,47 @@
 
 ## Chosen approach
 
-For the first MVP, use a hosted vision AI model through a provider API. This avoids the initial cost and complexity of training a custom computer-vision model. Keep the model provider behind a separate adapter so it can be replaced later.
+Use Gemini 3.8 Flash through a hosted API for qualitative corner wear, edge wear, and surface-scratch observations. Measure centering with image geometry in code. Keep the provider behind an adapter so another API or a custom model can replace it.
 
-The experiment so far is only a one-card pilot using ChatGPT's vision interface, not a controlled comparison of model providers or a direct API test. The choice is therefore provisional.
+This is a provisional implementation choice because it avoids training a custom model before a suitable labeled dataset exists. It is not a claim that Gemini is accurate enough: the existing one-card manual pilot matched two reference labels and also reported two additional labels.
 
-## Three key limitations
+## Three limitations
 
-1. **Visual uncertainty:** Glare, blur, lighting, and camera angle may hide defects or make reflections look like scratches.
-2. **Limited validation:** The initial pilot covers one card and uses one person's visual judgments as reference labels. The result cannot establish general accuracy.
-3. **No official grade prediction:** Visible-image analysis cannot reliably assess every factor used by professional graders. Results must be presented as preliminary observations, not a guaranteed grade or resale value.
+1. **Photo and visibility limits:** Blur, glare, cropping, lighting, and viewing angle can hide wear or make reflections look like scratches. Unusable photos must be rejected with clear retake instructions.
+2. **Weak validation and uncertainty:** The existing reference labels were made by one person on one card. The pilot cannot establish reliability, and model-reported confidence is not a calibrated probability.
+3. **No official grade or guaranteed profit:** A photo-based grade range cannot reproduce all professional grading checks. Prices and grading outcomes are uncertain; show assumptions and never imply an official grade or financial guarantee.
 
-## Criteria for reconsidering the approach
+## What would make us switch
 
-Re-evaluate the hosted-model choice if:
-- A test set of at least 30 varied cards shows that defect detection is not reliable enough for the intended use.
-- Measured API cost or response time exceeds the product's agreed budget.
-- A custom model can demonstrate better performance on independently labeled cards at an acceptable development and operating cost.
-- Privacy, provider availability, or provider terms make the hosted approach unsuitable.
+Reconsider the hosted approach if:
 
-Compare alternatives using the same images, reference labels, prompts where applicable, and evaluation metrics.
+- The 10–20-photo pilot and a larger, independently labeled follow-up show unacceptable false positives or missed defects for reseller decisions.
+- Measured per-analysis cost or latency exceeds a budget agreed with interviewed resellers.
+- Provider terms, privacy, outages, or rate limits make the service unsuitable.
+- A custom model performs better on the same held-out images and can be trained, deployed, and maintained at an acceptable total cost.
 
-## MVP task plan
+Compare candidate approaches on the same images and labels. Keep the integration modular to reduce provider lock-in.
 
-Dates below are proposed planning targets, not completed work.
+## Proposed MVP plan
 
-| **Task** | **Owner** | **Target date** |
+Assignments are proposed based on repository contributors and need confirmation by the team. Dates are target dates after 29 October 2026, not completed work.
+
+| Task | Owner | Target date |
 |---|---|---|
-| Collect additional card photos and prepare reference labels | Project owner | 21 Oct 2026 |
-| Test at least 10 varied card photos and record results | Project owner | 24 Oct 2026 |
-| Compare hosted-model options and verify API pricing | Project owner | 27 Oct 2026 |
-| Build a minimal photo-upload and results prototype | Project owner | 3 Nov 2026 |
-| Test image-quality warnings and document limitations | Project owner | 7 Nov 2026 |
-| Review results and decide whether to continue or switch approach | Project owner | 10 Nov 2026 |
+| Collect permissioned photos of 10–20 cards and prepare reference defect labels; Thomas Schneider reviews disagreements | Mauro Pires | 3 November 2026 |
+| Interview three Pokémon card resellers and record their decision thresholds | Thomas Schneider | 6 November 2026 |
+| Run the API experiment and report per-defect TP/FP/FN, latency, and token usage | Thomas Schneider | 7 November 2026 |
+| Add a photo-quality gate with clear blur, glare, and crop retake messages | Mauro Pires | 12 November 2026 |
+| Measure centering from card/border geometry and report measurement uncertainty | Mauro Pires | 16 November 2026 |
+| Build a result screen with marked defects, evidence, confidence, grade range, and disclaimer | Thomas Schneider | 19 November 2026 |
+| Add the raw-versus-grading profit calculation and explicit send/sell recommendation | Thomas Schneider | 23 November 2026 |
+| Test the complete flow with resellers and review the continue/switch criteria | Mauro Pires | 27 November 2026 |
 
-## MVP success criteria
+## MVP acceptance checks
 
-The prototype should accept a card photo, return a structured list of possible visible defects with evidence and uncertainty, and explain the limitations. Before claiming reliable performance, evaluate it against independently reviewed reference labels from multiple cards.
+- A controlled, repeatable experiment has at least 10 labeled cases and reports false positives and missed defects by category.
+- Poor photos are refused with a specific, actionable message rather than an analysis result.
+- Centering is measured from image geometry, not delegated to the vision model.
+- The result shows a marked-up image, possible defects with uncertainty/confidence, and a conservative grade range; it clearly says the estimate is not official.
+- The profit comparison includes the raw-sale path, each grade in the estimated range, grading and shipping costs, sale values, and the final "send for grading" or "sell raw" recommendation.
+- Interview evidence and the next approach decision are documented. Do not claim customer validation until interviews happen.

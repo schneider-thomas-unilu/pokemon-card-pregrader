@@ -1,42 +1,28 @@
-# Pokémon Card PreGrader — Initial Experiment
+# Pokémon Card PreGrader — Experiment Report
 
-## Objective
+## Existing manual pilot
 
-Test whether a vision-capable AI can identify visible Pokémon card defects.
+The repository's initial pilot used one Pokémon card photo and manually recorded two reference defects: corner wear and surface scratches. The recorded ChatGPT vision response marked four categories present: corner wear, surface scratches, centering, and edge wear. Card bending was not assessed in that older pilot.
 
-## Method
+| Category | Reference | Response | TP | FP | FN |
+|---|---:|---:|---:|---:|---:|
+| Corner wear | 1 | 1 | 1 | 0 | 0 |
+| Surface scratch | 1 | 1 | 1 | 0 | 0 |
+| Centering | 0 | 1 | 0 | 1 | 0 |
+| Edge wear | 0 | 1 | 0 | 1 | 0 |
+| **All four categories** | **2** | **4** | **2** | **2** | **0** |
 
-- One actual Pokémon card photograph was inspected.
-- A standardized prompt asked about centering, corner wear, edge wear, and surface scratches.
-- Two reference defects were manually recorded: surface scratches and corner wear.
-- The AI's written assessment was recorded in `predictions.csv`.
-- The recorded predictions were compared with the manual reference labels.
+**One-card precision:** 2 ÷ (2 + 2) = **50%**.
+**One-card recall:** 2 ÷ (2 + 0) = **100%**.
 
-## Result
+The calculation assumes that a category omitted from the manual reference is absent. Both extra labels are therefore counted as false positives for this pilot, but the labels were created by one person and need independent review. This is not a controlled API experiment or evidence of general accuracy. Centering should be measured with geometry, not a vision-language model.
 
-- Cards tested: 1
-- Reference defect labels: 2
-- Reference defects detected by AI: 2
-- Preliminary defect recall: 100% (2/2)
+## Reproducible API experiment
 
-**Calculation:** \(2 \div 2 \times 100 = 100\%\)
+A standard-library Python script is now available at `run_experiment.py`. It calls Gemini 3.8 Flash on each image, records the model's three qualitative defect decisions, token usage, and latency, then produces per-category TP/FP/FN, precision, and recall.
 
-## Interpretation
+Ten photos and five-category reference labels are available in `cases.csv` and `reference_defects.csv`. The Gemini API run is in progress; add measured results below after predictions and metrics have been generated. Do not report the one-card manual pilot as the multi-case API result.
 
-The AI reported both defects in the manual reference labels. This gives a preliminary defect recall of 100% for this single image.
+## How to interpret the next result
 
-The AI also reported centering and edge wear, which have not yet been independently verified against reference labels. Therefore, the experiment does not establish whether all its observations were correct. Recall measures detection of the recorded reference defects, not the accuracy of every prediction.
-
-This is a one-card pilot and does not establish overall model accuracy, grading reliability, or financial usefulness.
-
-## Limitations
-
-1. Only one card has been tested.
-2. Reference labels are based on one person's visual inspection.
-3. The AI response came from a chat interface, not a controlled API benchmark.
-4. Photograph angle, lighting, and reflections may affect observations.
-5. No official professional grade was established.
-
-## Next steps
-
-Test more cards, use consistent photographs, and independently verify reference labels before drawing conclusions.
+Report the number of cases and reference positives alongside each metric. The 10–20-case evaluation is a pilot for finding obvious failure modes, not a statistically conclusive performance guarantee. Treat self-reported model confidence as uncalibrated. Report disagreements and image-quality problems rather than silently excluding difficult cases.
