@@ -67,13 +67,13 @@ It also reports micro-aggregated counts across the five defect types. If a categ
 
 After each card prediction, the script prints a **heuristic condition score** and recommendation. It starts at 10 and subtracts a fixed penalty for each defect the model marks present:
 
-| Detected defect | Penalty |
-|---|---:|
-| Corner wear | 0.5 |
-| Edge wear | 0.75 |
-| Surface scratch | 1.5 |
-| Card bending | 3.5 |
-| Other visible issue | 2.5 |
+| Detected defect     | Penalty |
+| ------------------- | ------: |
+| Corner wear         |     0.5 |
+| Edge wear           |    0.75 |
+| Surface scratch     |     1.5 |
+| Card bending        |     3.5 |
+| Other visible issue |     2.5 |
 
 The score is clamped to 1–10 and shown to one decimal place. A score **below 6.0** gives **DO NOT BUY**; a score from **6.0 to below 9.0** gives **SELL RAW**; a score of **9.0 or above** gives **SUBMIT FOR GRADING**. Penalties stack when multiple defect types are detected. The score uses the model's present/absent flags, not its confidence, because that confidence has not been calibrated.
 
@@ -89,12 +89,12 @@ python -m unittest experiment.test_run_experiment
 
 The previous manual ChatGPT-interface pilot covered one card with two recorded reference defects. Its response listed all four categories: corner wear, surface scratches, centering, and edge wear. Under the pilot convention that unlisted defects are absent:
 
-| Category | Reference present | Pilot response present | TP | FP | FN |
-|---|---:|---:|---:|---:|---:|
-| Corner wear | 1 | 1 | 1 | 0 | 0 |
-| Surface scratch | 1 | 1 | 1 | 0 | 0 |
-| Edge wear | 0 | 1 | 0 | 1 | 0 |
-| Centering | 0 | 1 | 0 | 1 | 0 |
+| Category        | Reference present | Pilot response present |  TP |  FP |  FN |
+| --------------- | ----------------: | ---------------------: | --: | --: | --: |
+| Corner wear     |                 1 |                      1 |   1 |   0 |   0 |
+| Surface scratch |                 1 |                      1 |   1 |   0 |   0 |
+| Edge wear       |                 0 |                      1 |   0 |   1 |   0 |
+| Centering       |                 0 |                      1 |   0 |   1 |   0 |
 
 That is 2 TP and 2 FP among 4 reported observations (50% precision), with 2/2 reference defects found (100% recall) on **one card only**. The manual labels came from one person; the two extra categories are unverified and the result is not general accuracy evidence. Centering is not included in the new Gemini experiment because it should be measured from geometry.
 
