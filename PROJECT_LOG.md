@@ -55,7 +55,31 @@ For trading card resellers who need to assess ungraded cards quickly and avoid c
 AI enables our application to analyze card images and detect subtle defects, such as scratches, edge wear, corner damage, and centering issues, that may be overlooked during manual inspection. Without AI, evaluating each card would require significant expertise and time, making large-scale, consistent pre-grading difficult and expensive. AI allows us to automate this initial assessment, provide rapid grading estimates, and help resellers make informed purchasing decisions before investing in professional grading. 
 
 7) #  Monetization
+3 Tiered Subscription Model:
 
-We will offer a free version of the application, that generates revenue using advertisement like banners and/or an ad playing after a set amount of pregraded cards.  
-We will also offer a subscription, which users would have to pay monthly, which removes the advertisement from the application.  
-And finally a One-Time-Purchase, which unlocks everything from the app and removes every ad, without needing to subscribe to a plan.  
+Tier 1 Independent:
+* Target: Casual resellers, small card-shop owners, or beginners scaling up their operations.
+* Price: 19 € / month
+* Value Justification: If this tier helps a reseller avoid just one unnecessary or low-grade submission every 2 to 3 months, it has already paid for itself.
+* Features:
+   * Up to 50 AI pre-grades per month
+   * Standard condition analysis (surface, corners, edges, centering)
+   * Estimated ROI & grading cost-benefit calculator (PSA/CGC fee tables built-in)
+Tier 2 Professional:
+* Target: Full-time professional resellers processing regular batches of cards weekly.
+* Price: 49€ / month
+* Value Justification: Exactly matches the cost of one standard PSA Europe grading fee (49.99 €). Avoiding one mistake a month covers the entire monthly subscription
+* Features:
+   * Up to 250 AI pre-grades per month
+   * Advanced high-resolution defect detection (micro-scratches, subtle surface dents)
+   * Batch scanning mode (scan multiple cards in succession quickly)
+   * Live market pricing integration (estimated raw vs. graded value comparison)
+Tier 3 Business Tier:
+* Target User: High-volume card shops, team-based operations, or major online sellers.
+* Price: 149 € / month (or 1,430 € / year – approx. 119 €/mo billed annually)
+* Value Justification: For businesses grading dozens or hundreds of cards a month, preventing even a couple of miscalculations saves hundreds of euros.
+* Features:
+   * Unlimited (or very high cap, e.g., 1,000+) AI pre-grades per month
+   * Multi-user accounts / team access
+   * Advanced export options (CSV/Excel inventory tracking for tax and bookkeeping)
+   * Priority customer support & feature requests
