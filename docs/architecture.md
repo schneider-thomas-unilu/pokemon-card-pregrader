@@ -1,6 +1,6 @@
 # First Architecture Sketch — Pokémon Card PreGrader
 
-This is a first-pass design, not an implemented application. The checks and result calculations shown below are MVP work.
+This is a first-pass design. The experiment now includes a manual centering-landmark prototype; the remaining checks and result calculations shown below are MVP work.
 
 ```mermaid
 flowchart TD
@@ -16,7 +16,7 @@ flowchart TD
     P --> D[Recommendation: send for grading or sell raw]
 ```
 
-Centering is measured from the card and border geometry in code, not estimated by the vision model. The image-quality gate must refuse unusable photos instead of returning a success-shaped analysis. If the card boundary cannot be found reliably, ask the user to retake the photo.
+Centering is measured from card and inner-border landmarks selected by a person, then perspective-rectified and calculated in code; it is not estimated by the vision model. Automatic boundary detection is still future work. The image-quality gate must refuse unusable photos instead of returning a success-shaped analysis. If the card boundary cannot be found reliably, ask the user to retake the photo.
 
 ## Result-screen sketch
 
@@ -29,7 +29,8 @@ Centering is measured from the card and border geometry in code, not estimated b
 | Possible surface scratch  confidence: medium       |
 | Possible bend / crease   confidence: low          |
 | Other visible issue      confidence: medium       |
-| Centering measured from borders: within / off      |
+| Centering (manual): left:right 48:52               |
+|                  top:bottom 50:50                  |
 |                                                    |
 | Heuristic condition score: 9.2/10                |
 | NOT AN OFFICIAL GRADE OR PROFIT ESTIMATE.          |
@@ -45,7 +46,7 @@ Grade-range calibration requires professionally graded examples and must not be 
 ## Components and responsibilities
 
 - **Photo input and quality gate:** Check blur, glare, lighting, crop, and whether the full card is visible. Reject poor images with specific retake guidance.
-- **Geometry module:** Find card and printed-border boundaries; calculate centering ratios and surface the measurement and its uncertainty.
+- **Geometry module:** Current experiment asks a person to mark card and printed-border corners, rectifies perspective, and calculates border ratios; automatic detection and calibrated measurement uncertainty remain future work.
 - **Vision adapter:** Send the image to the selected API for qualitative corner/edge wear, scratches, visible bends or creases, and other visible issues such as stains, dents, discoloration, or print defects. Exclude ordinary card design and avoid double-counting named categories. Do not infer hidden bends from a straight-on photo; request angled/front-and-back photos for better assessment. Keep the API schema and provider-specific details isolated.
 - **Result and calibration module:** Mark possible defects on the photo; show evidence, uncertainty, confidence, and a conservative grade range only after calibration.
 - **Profit calculator:** Compare estimated net proceeds from selling raw versus grading and selling at each grade in the range.

@@ -2,7 +2,7 @@
 
 ## Question and protocol
 
-Can Gemini 3.8 Flash identify visible corner wear, edge wear, surface scratches, card bending, and other visible issues in card photos? The script sends one image per API request and records the model response, latency, and token usage. For bending, it assesses only visible creases, folds, or warping; a straight-on front photo cannot rule out a hidden bend. “Other visible issue” is for stains, dents, discoloration, print defects, or similar issues not covered by the named defect categories; ordinary card artwork and holographic patterns are not defects. Centering is excluded from model labels and is intended to be measured with image geometry in the application.
+Can Gemini 3.8 Flash identify visible corner wear, edge wear, surface scratches, card bending, and other visible issues in card photos? The script sends one image per API request and records the model response, latency, and token usage. For bending, it assesses only visible creases, folds, or warping; a straight-on front photo cannot rule out a hidden bend. “Other visible issue” is for stains, dents, discoloration, print defects, or similar issues not covered by the named defect categories; ordinary card artwork and holographic patterns are not defects. Centering is excluded from model labels and is measured separately from manually selected image geometry.
 
 Use 10–20 permissioned card photos. Two people should inspect each photo and agree on visible reference defects before running the model. The reference CSV lists positive labels; an omitted category for an image is treated as absent. Keep photos sharp, well-lit, and showing the complete card, while recording any remaining glare or angle issues in notes.
 
@@ -25,7 +25,13 @@ Reference labels use `image_id,defect,present,notes`. Supply exactly 50 rows for
 
 ## Run on Windows
 
-Python 3.10 or later is required; the script uses only the standard library. The runner reads `GEMINI_API_KEY` from the process environment or from a repository-root `.env` file. It accepts both `GEMINI_API_KEY=...` and `API_KEY=...`; an environment variable takes precedence. Keep `.env` out of version control.
+Python 3.10 or later is required. Install Pillow for the manual JPEG landmark tool:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+The Gemini runner otherwise uses only the standard library. It reads `GEMINI_API_KEY` from the process environment or from a repository-root `.env` file. It accepts both `GEMINI_API_KEY=...` and `API_KEY=...`; an environment variable takes precedence. Keep `.env` out of version control.
 
 You can keep the key in an ignored repository-root `.env` file:
 
@@ -40,7 +46,31 @@ $env:GEMINI_API_KEY = Read-Host "Gemini API key"
 python experiment\run_experiment.py --manifest experiment\cases.csv --references experiment\reference_defects.csv
 ```
 
+## Manual centering measurement
+
+Run the landmark tool before the Gemini experiment:
+
+```powershell
+python experiment\measure_centering.py --manifest experiment\cases.csv
+```
+
+For each card, click its outer corners clockwise starting at top-left, then click the visible inner printed-border corners in the same order. The program maps the selected outer quadrilateral to a unit square using a projective transform, then computes each border width as a percentage of the corresponding card dimension. It reports opposing margins as normalized ratios (for example, `48.0:52.0`) and saves the original pixel landmarks plus recalculated measurements to `experiment\centering_measurements.csv`. Undo, clear, skip, and resume are supported. Add `--overwrite` to start that measurement file over.
+
+Use the inner edge of the card's printed frame consistently. If a card has no clear inner border, the border is obscured, or corners cannot be selected reliably, skip it instead of guessing. The arithmetic is deterministic; the selection of which pixels define the physical and printed borders remains a manual measurement and can be affected by glare, blur, rounded corners, and click precision. This is a centering measurement, not an official grade or a full card-condition assessment.
+
+Pass the saved file to the experiment to include ratios and border percentages in its predictions CSV and console output:
+
+```powershell
+python experiment\run_experiment.py --manifest experiment\cases.csv --references experiment\reference_defects.csv --centering-measurements experiment\centering_measurements.csv
+```
+
+When `--centering-measurements` is provided, it must contain a measurement for every image in the manifest. The runner recalculates the ratios from the saved pixel landmarks rather than trusting the stored summary columns. The API prompt still does not ask Gemini to judge centering.
+
 The script prints each validation step, request attempt, retry, response time, and saved image. Output is flushed as it runs, so progress appears during slow requests. It writes one row per photo to `experiment\gemini_predictions.csv` and per-defect counts to `experiment\gemini_predictions_metrics.csv`. Requests time out after 180 seconds by default; adjust with `--timeout SECONDS`. Each completed prediction is saved immediately. If the predictions file already exists, choose another `--output` or pass `--overwrite`.
+
+### Observed analysis time
+
+On the current Gemini free-tier setup, one card analysis is taking roughly **100–200 seconds** in our runs. That is a long wait for a user-facing grading flow. A higher Gemini subscription or paid API tier may improve throughput or reduce delays caused by free-tier limits, but it does not guarantee that each individual response will be faster. Treat faster paid-tier performance as a hypothesis: compare per-card `latency_seconds` on the same images and model before relying on it. The recorded latency includes the API request and response, and transient retries can make it longer.
 
 Recalculate metrics without making API calls:
 
@@ -82,7 +112,7 @@ These are transparent starting weights for a prototype, not coefficients learned
 Run the offline metric and response parsing tests with:
 
 ```powershell
-python -m unittest experiment.test_run_experiment
+python -m unittest experiment.test_run_experiment experiment.test_centering
 ```
 
 ## Evidence so far

@@ -27,7 +27,13 @@ This is an early-stage experiment, not a production application. The manual one-
 
 ### Start the experiment (Windows / PowerShell)
 
-From the repository root, confirm `experiment\cases.csv` lists 10–20 photos and `experiment\reference_defects.csv` has reviewed labels for each photo. Put your Gemini key in the ignored root `.env` file:
+From the repository root, install the image-display dependency:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Confirm `experiment\cases.csv` lists 10–20 photos and `experiment\reference_defects.csv` has reviewed labels for each photo. Put your Gemini key in the ignored root `.env` file:
 
 ```text
 API_KEY=your-gemini-api-key
@@ -36,10 +42,11 @@ API_KEY=your-gemini-api-key
 Then run:
 
 ```powershell
-python experiment\run_experiment.py --manifest experiment\cases.csv --references experiment\reference_defects.csv --overwrite
+python experiment\measure_centering.py --manifest experiment\cases.csv
+python experiment\run_experiment.py --manifest experiment\cases.csv --references experiment\reference_defects.csv --centering-measurements experiment\centering_measurements.csv --overwrite
 ```
 
-The script prints each request/retry and saves progress after every card to `experiment\gemini_predictions.csv`; per-category metrics go to `experiment\gemini_predictions_metrics.csv`. For each prediction it also prints a prototype condition score and recommends "DO NOT BUY" below 6, "SELL RAW" from 6 to below 9, or "SUBMIT FOR GRADING" at 9 or above. This is a fixed-weight heuristic, not an official grade or profit calculation. Do not commit or share the `.env` file. For key setup, reruns, troubleshooting, and metric definitions, see the [detailed experiment instructions](experiment/README.md).
+The centering tool asks you to mark the four card corners and four visible inner-border corners. It rectifies perspective and calculates left:right and top:bottom border ratios without using AI. Cards without a clearly measurable inner border can be skipped. The measurements are saved to `experiment\centering_measurements.csv` and attached to each prediction. The API runner prints each request/retry and saves progress after every card to `experiment\gemini_predictions.csv`; per-category metrics go to `experiment\gemini_predictions_metrics.csv`. For each prediction it also prints a prototype condition score and recommends "DO NOT BUY" below 6, "SELL RAW" from 6 to below 9, or "SUBMIT FOR GRADING" at 9 or above. This is a fixed-weight heuristic, not an official grade or profit calculation. Do not commit or share the `.env` file. For key setup, reruns, troubleshooting, and metric definitions, see the [detailed experiment instructions](experiment/README.md).
 
 The notebook was developed in Google Colab; its earlier manual ChatGPT-interface result was not an API experiment.
 
@@ -52,7 +59,7 @@ The pilot uses one card and reference labels created by one person. Photo qualit
 - Interview resellers and record their decision thresholds.
 - Gather permissioned card photos and independently agree reference labels.
 - Run the API experiment and record defect counts, latency, and token usage.
-- Build the photo-quality gate, code-based centering measurement, marked-up result, grade range, and profit recommendation.
+- Extend the manual centering prototype into automatic boundary detection, then build the photo-quality gate, marked-up result, grade range, and profit recommendation.
 - See the [named-owner MVP plan](docs/decision-and-mvp-plan.md) for target dates.
 
 ## Disclaimer

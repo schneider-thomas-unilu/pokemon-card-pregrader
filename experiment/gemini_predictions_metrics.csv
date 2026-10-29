@@ -1,0 +1,7 @@
+defect,cases,evaluated_cases,evaluated_pairs,uncertain_pairs,true_positives,false_positives,false_negatives,precision,recall
+corner_wear,10,10,10,0,1,0,2,1.0,0.3333333333333333
+edge_wear,10,10,10,0,1,2,2,0.3333333333333333,0.3333333333333333
+surface_scratch,10,7,7,3,1,0,2,1.0,0.3333333333333333
+card_bending,10,10,10,0,1,2,1,0.3333333333333333,0.5
+other_visible_issue,10,10,10,0,3,0,0,1.0,1.0
+ALL,10,10,47,3,7,4,7,0.6363636363636364,0.5

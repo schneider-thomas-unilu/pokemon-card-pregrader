@@ -1,10 +1,12 @@
 import csv
+import json
 import os
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from experiment.centering import MEASUREMENT_COLUMNS, read_centering_measurements
 from experiment.run_experiment import (
     DEFECT_TYPES,
     REPOSITORY_ROOT,
@@ -145,12 +147,47 @@ class ExperimentMetricTests(unittest.TestCase):
             ],
         }
 
-        row = make_prediction_row("card_01", "gemini-3.8-flash", response, 1.25)
+        row = make_prediction_row(
+            "card_01",
+            "gemini-3.8-flash",
+            response,
+            1.25,
+            {
+                "left_right_ratio": "48.0:52.0",
+                "top_bottom_ratio": "50.0:50.0",
+                "left_margin_percent": 10.0,
+                "right_margin_percent": 10.8,
+                "top_margin_percent": 12.0,
+                "bottom_margin_percent": 12.0,
+                "method": "manual_landmarks_perspective_rectified",
+            },
+        )
         self.assertEqual(row["input_tokens"], 2000)
         self.assertEqual(row["output_tokens"], 29)
         self.assertEqual(row["thinking_tokens"], 4)
         self.assertEqual(row["heuristic_condition_score"], 10.0)
         self.assertEqual(row["recommendation"], "SUBMIT FOR GRADING")
+        self.assertEqual(row["centering_left_right_ratio"], "48.0:52.0")
+        self.assertEqual(row["centering_top_bottom_ratio"], "50.0:50.0")
+        self.assertEqual(row["centering_method"], "manual_landmarks_perspective_rectified")
+
+    def test_centering_csv_is_recalculated_from_landmarks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "centering.csv"
+            row = {
+                "image_id": "card_01",
+                "outer_corners": json.dumps(((0, 0), (100, 0), (100, 200), (0, 200))),
+                "inner_corners": json.dumps(((10, 20), (88, 20), (88, 174), (10, 174))),
+            }
+            with path.open("w", newline="", encoding="utf-8") as file:
+                writer = csv.DictWriter(file, fieldnames=MEASUREMENT_COLUMNS)
+                writer.writeheader()
+                writer.writerow(row)
+
+            measurements = read_centering_measurements(path, {"card_01"})
+
+        self.assertEqual(measurements["card_01"]["left_right_ratio"], "45.5:54.5")
+        self.assertEqual(measurements["card_01"]["top_bottom_ratio"], "43.5:56.5")
 
     def test_csv_inputs_and_predictions_work_for_ten_cases(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -16,6 +16,11 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+if __package__ == "experiment":
+    from .centering import read_centering_measurements
+else:
+    from centering import read_centering_measurements
+
 
 DEFECT_TYPES = (
     "corner_wear",
@@ -180,6 +185,13 @@ def prediction_columns() -> list[str]:
         "latency_seconds",
         "heuristic_condition_score",
         "recommendation",
+        "centering_left_margin_percent",
+        "centering_right_margin_percent",
+        "centering_top_margin_percent",
+        "centering_bottom_margin_percent",
+        "centering_left_right_ratio",
+        "centering_top_bottom_ratio",
+        "centering_method",
     ]
     for defect in DEFECT_TYPES:
         columns.extend(
@@ -499,7 +511,11 @@ def parse_response(response: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def make_prediction_row(
-    image_id: str, model: str, response: dict[str, Any], latency: float
+    image_id: str,
+    model: str,
+    response: dict[str, Any],
+    latency: float,
+    centering: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Convert one API response into a flat row, including billable thinking tokens."""
     defects = parse_response(response)
@@ -519,6 +535,17 @@ def make_prediction_row(
         "thinking_tokens": thinking_tokens,
         "latency_seconds": round(latency, 3),
     }
+    centering = centering or {}
+    for field in (
+        "left_margin_percent",
+        "right_margin_percent",
+        "top_margin_percent",
+        "bottom_margin_percent",
+        "left_right_ratio",
+        "top_bottom_ratio",
+        "method",
+    ):
+        row[f"centering_{field}"] = centering.get(field, "")
     for defect, result in defects.items():
         row[f"{defect}_detected"] = str(result["present"]).lower()
         row[f"{defect}_confidence"] = result["confidence"]
@@ -573,6 +600,18 @@ def print_metrics(rows: list[dict[str, Any]]) -> None:
         )
 
 
+def print_centering(image_id: str, row: dict[str, Any]) -> None:
+    """Print manual border ratios when measurements were attached to a prediction."""
+    left_right = row.get("centering_left_right_ratio")
+    top_bottom = row.get("centering_top_bottom_ratio")
+    if left_right and top_bottom:
+        print(
+            f"Centering for {image_id}: left:right {left_right}, "
+            f"top:bottom {top_bottom} (manual, perspective-rectified).",
+            flush=True,
+        )
+
+
 def main() -> None:
     """Validate inputs, run or evaluate the batch, then write and print metrics."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -582,6 +621,11 @@ def main() -> None:
     parser.add_argument("--model", default=os.environ.get("GEMINI_MODEL", "gemini-3.8-flash"))
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--evaluate-only", action="store_true")
+    parser.add_argument(
+        "--centering-measurements",
+        type=Path,
+        help="Optional output from measure_centering.py to attach manual border ratios.",
+    )
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
 
@@ -598,6 +642,17 @@ def main() -> None:
         f"{len(references)} positive labels and {len(uncertain)} uncertain labels.",
         flush=True,
     )
+    centering_measurements = (
+        read_centering_measurements(args.centering_measurements, case_ids)
+        if args.centering_measurements
+        else {}
+    )
+    if centering_measurements:
+        print(
+            f"Loaded manual centering measurements for "
+            f"{len(centering_measurements)} cards.",
+            flush=True,
+        )
     if args.evaluate_only:
         print(f"Reading existing predictions from {args.output} (no API calls).", flush=True)
         prediction_rows = read_prediction_rows(args.output, case_ids)
@@ -610,6 +665,15 @@ def main() -> None:
         for row in prediction_rows:
             score, recommendation = recommend_card(detected_defects_from_row(row))
             print_recommendation(row["image_id"], score, recommendation)
+            row.update(
+                {
+                    f"centering_{field}": value
+                    for field, value in centering_measurements.get(
+                        row["image_id"], {}
+                    ).items()
+                }
+            )
+            print_centering(row["image_id"], row)
     else:
         api_key = load_api_key()
         if not api_key:
@@ -631,7 +695,13 @@ def main() -> None:
             try:
                 response, latency = request_model(case, args.model, api_key, args.timeout)
                 results.append(
-                    make_prediction_row(case.image_id, args.model, response, latency)
+                    make_prediction_row(
+                        case.image_id,
+                        args.model,
+                        response,
+                        latency,
+                        centering_measurements.get(case.image_id),
+                    )
                 )
                 prediction = results[-1]
                 # Persist each success so an interrupted batch can retain completed cases.
@@ -652,6 +722,7 @@ def main() -> None:
                 prediction["heuristic_condition_score"],
                 prediction["recommendation"],
             )
+            print_centering(case.image_id, prediction)
         predictions = read_predictions(args.output, case_ids)
 
     print("Calculating per-category metrics...", flush=True)
