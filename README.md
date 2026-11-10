@@ -50,6 +50,14 @@ The centering tool asks you to mark the four card corners and four visible inner
 
 The notebook was developed in Google Colab; its earlier manual ChatGPT-interface result was not an API experiment.
 
+## First app MVP
+
+The first React and FastAPI application is in [`app/`](app/README.md). Run it with Docker Compose from that folder; Gemini vision is optional and requires a `GEMINI_API_KEY`. The app measures centering from manually selected landmarks and compares user-entered raw and graded sale assumptions. It does not predict an official grade.
+
+## First app MVP
+
+The first React and FastAPI application is in [`app/`](app/README.md). Run it with Docker Compose from that folder; Gemini vision is optional and requires a `GEMINI_API_KEY`. The app measures centering from manually selected landmarks and compares user-entered raw and graded sale assumptions. It does not predict an official grade.
+
 ## Limitations
 
 The pilot uses one card and reference labels created by one person. Photo quality, glare, and viewing angle can affect observations. The app cannot guarantee a professional grade, card authenticity, or resale value.

@@ -1,0 +1,8 @@
+.env
+app/.env
+app/backend/.venv
+app/frontend/node_modules
+app/frontend/dist
+**/__pycache__
+**/*.py[cod]
+.git
