@@ -13,8 +13,8 @@ export default defineConfig({
       clientPort: Number(process.env.VITE_HMR_CLIENT_PORT ?? "5173"),
     },
     proxy: {
-      "/api": "http://localhost:8000",
-      "/health": "http://localhost:8000",
+      "/api": process.env.API_PROXY_TARGET ?? "http://localhost:8000",
+      "/health": process.env.API_PROXY_TARGET ?? "http://localhost:8000",
     },
   },
 });

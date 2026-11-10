@@ -1,92 +1,156 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-const pointLabels = [
-  "Top-left",
-  "Top-right",
-  "Bottom-right",
-  "Bottom-left",
-];
 const defectLabels = {
   corner_wear: "Corner wear",
   edge_wear: "Edge wear",
   surface_scratch: "Surface scratches",
-  bend_or_crease: "Bend or crease",
+  card_bending: "Card bending",
   other_visible_issue: "Other visible issue",
 };
-const defaults = {
-  raw_sale: "30",
-  grade_7_sale: "45",
-  grade_8_sale: "70",
-  grading_fee: "20",
-  shipping: "8",
-  selling_cost: "3",
-};
 
-function money(value) {
-  return new Intl.NumberFormat("en-IE", {
-    style: "currency",
-    currency: "EUR",
-  }).format(value);
+function landmarkPath(points, size) {
+  if (!size || points.length < 2) return "";
+  return `${points.map(([x, y], index) => `${index === 0 ? "M" : "L"} ${(x / size.width) * 100} ${(y / size.height) * 100}`).join(" ")}${points.length === 4 ? " Z" : ""}`;
 }
 
 export default function App() {
   const uploadInput = useRef(null);
-  const cameraInput = useRef(null);
+  const cameraVideo = useRef(null);
+  const cameraStream = useRef(null);
+  const errorCloseButton = useRef(null);
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [imageSize, setImageSize] = useState(null);
   const [outer, setOuter] = useState([]);
-  const [inner, setInner] = useState([]);
-  const [activeGroup, setActiveGroup] = useState("outer");
-  const [assumptions, setAssumptions] = useState(defaults);
+  const [innerCorners, setInnerCorners] = useState([]);
+  const [activeLandmark, setActiveLandmark] = useState("outer");
   const [includeAi, setIncludeAi] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const activePoints = activeGroup === "outer" ? outer : inner;
-  const progress = useMemo(
-    () => `${outer.length}/4 card corners · ${inner.length}/4 inner-border corners`,
-    [outer.length, inner.length],
-  );
+  useEffect(() => {
+    if (!error) return undefined;
+    errorCloseButton.current?.focus();
+    function dismissOnEscape(event) {
+      if (event.key === "Escape") setError("");
+    }
+    window.addEventListener("keydown", dismissOnEscape);
+    return () => window.removeEventListener("keydown", dismissOnEscape);
+  }, [error]);
 
-  function chooseFile(event) {
-    const selected = event.target.files?.[0];
-    event.target.value = "";
+  function setPhoto(selected) {
     if (!selected) return;
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setFile(selected);
     setPreviewUrl(URL.createObjectURL(selected));
     setImageSize(null);
     setOuter([]);
-    setInner([]);
+    setInnerCorners([]);
+    setActiveLandmark("outer");
     setResult(null);
     setError("");
     setConfirmed(false);
   }
 
+  function chooseFile(event) {
+    const selected = event.target.files?.[0];
+    event.target.value = "";
+    setPhoto(selected);
+  }
+
+  function closeCamera() {
+    cameraStream.current?.getTracks().forEach((track) => track.stop());
+    cameraStream.current = null;
+    setCameraOpen(false);
+    setCameraError("");
+  }
+
+  useEffect(() => {
+    if (!cameraOpen) return undefined;
+    let cancelled = false;
+
+    async function startCamera() {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraError("This browser cannot open a camera here. Try a supported browser on HTTPS or localhost.");
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        cameraStream.current = stream;
+        if (cameraVideo.current) cameraVideo.current.srcObject = stream;
+      } catch {
+        if (!cancelled) setCameraError("Camera access was blocked or no camera is available. Check browser permissions and try again.");
+      }
+    }
+
+    startCamera();
+    return () => {
+      cancelled = true;
+      cameraStream.current?.getTracks().forEach((track) => track.stop());
+      cameraStream.current = null;
+    };
+  }, [cameraOpen]);
+
+  function capturePhoto() {
+    const video = cameraVideo.current;
+    if (!video?.videoWidth || !video.videoHeight) {
+      setCameraError("The camera is still starting. Please try again in a moment.");
+      return;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      setCameraError("Could not capture the photo. Please try again.");
+      return;
+    }
+    context.drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      if (!blob || !cameraStream.current) {
+        setCameraError("Could not capture the photo. Please try again.");
+        return;
+      }
+      setPhoto(new File([blob], `card-${Date.now()}.jpg`, { type: "image/jpeg" }));
+      closeCamera();
+    }, "image/jpeg", 0.92);
+  }
+
   function selectLandmark(event) {
+    const activePoints = activeLandmark === "outer" ? outer : innerCorners;
     if (!previewUrl || activePoints.length >= 4) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const naturalWidth = event.currentTarget.naturalWidth;
     const naturalHeight = event.currentTarget.naturalHeight;
+    if (!naturalWidth || !naturalHeight) return;
     const x = ((event.clientX - bounds.left) / bounds.width) * naturalWidth;
     const y = ((event.clientY - bounds.top) / bounds.height) * naturalHeight;
-    const update = activeGroup === "outer" ? setOuter : setInner;
-    update((points) => [...points, [Number(x.toFixed(2)), Number(y.toFixed(2))]]);
+    const point = [Number(x.toFixed(2)), Number(y.toFixed(2))];
+    if (activeLandmark === "outer") {
+      setOuter((points) => [...points, point]);
+      if (outer.length === 3) setActiveLandmark("inner");
+    } else {
+      setInnerCorners((points) => [...points, point]);
+    }
     setResult(null);
     setError("");
   }
 
   function resetActivePoints() {
-    if (activeGroup === "outer") setOuter([]);
-    else setInner([]);
-    setResult(null);
-  }
-
-  function setAssumption(name, value) {
-    setAssumptions((current) => ({ ...current, [name]: value }));
+    setOuter([]);
+    setInnerCorners([]);
+    setActiveLandmark("outer");
     setResult(null);
   }
 
@@ -95,8 +159,11 @@ export default function App() {
     setError("");
     setResult(null);
     if (!file) return setError("Choose a card photo first.");
-    if (outer.length !== 4 || inner.length !== 4) {
-      return setError("Mark all four card corners and all four inner-border corners.");
+    if (outer.length !== 4) {
+      return setError("Mark all four outside corners of the card.");
+    }
+    if (innerCorners.length !== 4) {
+      return setError("Mark all four corners of the inner printed border.");
     }
     if (!confirmed) return setError("Confirm that the full card is visible and the photo is yours to analyze.");
     if (includeAi && !window.confirm("The card photo will be sent to the configured vision provider for analysis. Continue?")) {
@@ -105,30 +172,70 @@ export default function App() {
 
     const data = new FormData();
     data.append("image_file", file);
-    data.append("outer_corners", JSON.stringify(outer));
-    data.append("inner_corners", JSON.stringify(inner));
+    data.append("card_corners", JSON.stringify(outer));
+    data.append("inner_corners", JSON.stringify(innerCorners));
     data.append("include_ai", String(includeAi));
-    Object.entries(assumptions).forEach(([key, value]) => data.append(key, value));
 
     setBusy(true);
     try {
       const response = await fetch("/api/analyze", { method: "POST", body: data });
-      const body = await response.json();
+      const responseText = await response.text();
+      let body = null;
+      if (responseText) {
+        try {
+          body = JSON.parse(responseText);
+        } catch {
+          if (response.ok) {
+            throw new Error("The analysis service returned an unreadable response. Please try again.");
+          }
+        }
+      }
       if (!response.ok) {
-        const detail = body.detail;
+        const detail = body?.detail;
+        if (typeof detail === "string") throw new Error(detail);
+        if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+          const reasons = Array.isArray(detail.retake_reasons) ? detail.retake_reasons.join(" ") : "";
+          const providerBody = typeof detail.provider_response_body === "string"
+            ? `Gemini response body:\n${detail.provider_response_body}`
+            : "";
+          if (detail.message || reasons || providerBody) {
+            throw new Error([detail.message, reasons, providerBody].filter(Boolean).join("\n\n"));
+          }
+        }
+        if (Array.isArray(detail)) {
+          const messages = detail.map((item) => item?.msg).filter(Boolean);
+          if (messages.length) throw new Error(messages.join(" "));
+        }
+        const statusMessages = {
+          413: "This photo is too large to upload. Choose a smaller image and try again.",
+          415: "This photo format isn’t supported. Use a JPEG, PNG, or WebP image.",
+          502: "The optional photo-analysis provider could not complete the request. Please try again later.",
+          503: "The optional photo-analysis service is not configured right now.",
+        };
         throw new Error(
-          typeof detail === "string"
-            ? detail
-            : `${detail?.message ?? "Analysis failed."} ${(detail?.retake_reasons ?? []).join(" ")}`,
+          statusMessages[response.status]
+            ?? `The analysis service returned an error (HTTP ${response.status}). Please try again.`,
         );
+      }
+      if (!body || typeof body !== "object") {
+        throw new Error("The analysis service returned an empty response. Please try again.");
       }
       setResult(body);
     } catch (requestError) {
-      setError(requestError.message || "Could not reach the analysis service.");
+      setError(
+        requestError instanceof TypeError
+          ? "Could not connect to the analysis service. Check that the app is running and try again."
+          : requestError instanceof Error
+            ? requestError.message
+            : "An unexpected error interrupted the review. Please try again.",
+      );
     } finally {
       setBusy(false);
     }
   }
+
+  const outerPath = landmarkPath(outer, imageSize);
+  const innerPath = landmarkPath(innerCorners, imageSize);
 
   return (
     <main className="shell">
@@ -141,9 +248,9 @@ export default function App() {
 
       <form className="workspace" onSubmit={submit}>
         <section className="panel photo-panel">
-          <div className="panel-heading">
-            <div><span className="step">01 — YOUR PHOTO</span><h2>Start with a clear view</h2></div>
-            <span className="optional">JPG · PNG · WEBP</span>
+          <div className="photo-heading">
+            <p className="photo-formats">JPG, PNG or WebP · front of card</p>
+            {previewUrl && <button type="button" className="change-photo" onClick={() => uploadInput.current?.click()}>Change photo</button>}
           </div>
           {!previewUrl ? (
             <div className="dropzone">
@@ -152,34 +259,47 @@ export default function App() {
               <span>Front-facing, evenly lit, fully in view</span>
               <div className="photo-actions">
                 <button type="button" className="browse" onClick={() => uploadInput.current?.click()}>↑ &nbsp; Upload a photo</button>
-                <button type="button" className="camera-button" onClick={() => cameraInput.current?.click()}>▣ &nbsp; Take a picture</button>
-              </div>
-              <span className="photo-hint">Camera option works on supported phones and browsers</span>
+                <button type="button" className="camera-button" onClick={() => { setCameraError(""); setCameraOpen(true); }}>▣ &nbsp; Take a picture</button>
             </div>
+              <span className="photo-hint">A clear, straight-on photo helps make the review more useful.</span>
+              </div>
           ) : (
             <div className="image-stage">
               <div className="image-frame">
                 <img src={previewUrl} alt="Uploaded card; click to mark the requested corners" onClick={selectLandmark} onLoad={(event) => setImageSize({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />
                 <div className="image-overlay">
-                  {outer.map((point, index) => <span className="marker outer-marker" key={`o${index}`} style={{ left: `${imageSize ? point[0] / imageSize.width * 100 : 0}%`, top: `${imageSize ? point[1] / imageSize.height * 100 : 0}%` }}>{index + 1}</span>)}
-                  {inner.map((point, index) => <span className="marker inner-marker" key={`i${index}`} style={{ left: `${imageSize ? point[0] / imageSize.width * 100 : 0}%`, top: `${imageSize ? point[1] / imageSize.height * 100 : 0}%` }}>{index + 1}</span>)}
+                  {(outerPath || innerPath) && (
+                    <svg className="image-outline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                      {outerPath && <path className="card-outline-halo" d={outerPath} />}
+                      {outerPath && <path className="card-outline-line" d={outerPath} />}
+                      {innerPath && <path className="inner-outline-line" d={innerPath} />}
+                    </svg>
+                  )}
+                  {outer.map((point, index) => <span className="marker outer-marker" key={`o${index}`} style={{ left: `${imageSize ? point[0] / imageSize.width * 100 : 0}%`, top: `${imageSize ? point[1] / imageSize.height * 100 : 0}%` }} />)}
+                  {innerCorners.map((point, index) => <span className="marker inner-marker" key={`i${index}`} style={{ left: `${imageSize ? point[0] / imageSize.width * 100 : 0}%`, top: `${imageSize ? point[1] / imageSize.height * 100 : 0}%` }} />)}
                 </div>
               </div>
-              <button type="button" className="change-photo" onClick={() => uploadInput.current?.click()}>Change photo</button>
             </div>
           )}
           {file && (
             <div className="landmark-controls">
               <div className="landmark-topline">
-                <div><span className="step">02 — CENTERING</span><strong>Mark the corners, clockwise</strong></div>
-                <span className="progress">{progress}</span>
+                <div><strong>Mark the card borders, clockwise</strong></div>
               </div>
               <div className="mark-actions">
-                <button type="button" className={activeGroup === "outer" ? "mark-tab active" : "mark-tab"} onClick={() => setActiveGroup("outer")}>Card edge</button>
-                <button type="button" className={activeGroup === "inner" ? "mark-tab active" : "mark-tab"} onClick={() => setActiveGroup("inner")}>Printed border</button>
-                <button type="button" className="text-button" onClick={resetActivePoints}>Reset {activeGroup === "outer" ? "card edge" : "border"}</button>
+                <button type="button" className={`mark-tab${activeLandmark === "outer" ? " active" : ""}`} onClick={() => setActiveLandmark("outer")}>Outside corners ({outer.length}/4)</button>
+                <button type="button" className={`mark-tab${activeLandmark === "inner" ? " active" : ""}`} onClick={() => setActiveLandmark("inner")} disabled={outer.length !== 4}>Inner printed border ({innerCorners.length}/4)</button>
+                <button type="button" className="text-button" onClick={resetActivePoints}>Reset points</button>
               </div>
-              <p className="next-point">Next point <strong>{activePoints.length < 4 ? pointLabels[activePoints.length] : "Complete"}</strong><span>{activeGroup === "outer" ? "Mark the card’s outside edge" : "Mark the inner printed border"}</span></p>
+              <p className="next-point">
+                {activeLandmark === "outer"
+                  ? outer.length < 4
+                    ? "Tap the outside corners, starting at the top-left and moving clockwise."
+                    : "Outside corners are marked. Select the inner printed border to continue."
+                  : innerCorners.length < 4
+                    ? "Tap the inner border corners, starting at the top-left and moving clockwise."
+                    : "Both borders are marked. Review the outlines, then build your card review."}
+              </p>
               <label className="confirm-line">
                 <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />
                 <span>The entire card is visible and I have permission to analyze this photo.</span>
@@ -189,85 +309,103 @@ export default function App() {
         </section>
 
         <aside className="side-column">
-          <section className="panel estimate-panel">
-            <div className="panel-heading">
-              <div><span className="step">03 — YOUR NUMBERS</span><h2>Does grading add up?</h2></div>
-              <span className="currency">EUR €</span>
-            </div>
-            <p className="panel-copy">A quick net comparison, based on the prices and costs you expect.</p>
-            <div className="value-grid">
-              <MoneyField label="Sell raw for" name="raw_sale" value={assumptions.raw_sale} onChange={setAssumption} />
-              <MoneyField label="If graded 7" name="grade_7_sale" value={assumptions.grade_7_sale} onChange={setAssumption} />
-              <MoneyField label="If graded 8" name="grade_8_sale" value={assumptions.grade_8_sale} onChange={setAssumption} />
-              <MoneyField label="Grading fee" name="grading_fee" value={assumptions.grading_fee} onChange={setAssumption} />
-              <MoneyField label="Shipping" name="shipping" value={assumptions.shipping} onChange={setAssumption} />
-              <MoneyField label="Selling costs" name="selling_cost" value={assumptions.selling_cost} onChange={setAssumption} />
+          <section className="panel review-method-panel">
+              <p className="panel-copy">The report explains the photo checks and anything the optional condition review can see.</p>
+            <div className="method-list">
+              <div><span aria-hidden="true">•</span><p><strong>Photo quality</strong><small>Basic size, lighting and focus checks.</small></p></div>
+              <div><span aria-hidden="true">•</span><p><strong>Card outline</strong><small>Your outside corners mark the card’s visible boundary.</small></p></div>
+              <div><span aria-hidden="true">•</span><p><strong>Centering</strong><small>Outside and inner-border corners estimate opposing margins.</small></p></div>
+              <div><span aria-hidden="true">•</span><p><strong>Visible condition</strong><small>Optional observations with evidence and uncertainty.</small></p></div>
             </div>
             <label className="ai-toggle">
               <input type="checkbox" checked={includeAi} onChange={(event) => setIncludeAi(event.target.checked)} />
-              <span><strong>Include AI visual observations</strong><small>Photo is sent to the configured Gemini provider. Optional.</small></span>
+              <span><strong>Include a photo condition review</strong><small>Your photo is sent to Gemini only if you select this and confirm.</small></span>
               <span className="toggle-indicator" />
             </label>
             <button type="submit" className="analyze-button" disabled={busy || !file}>
-              {busy ? "Reviewing your card…" : "Review this card"} <span>↗</span>
+              {busy ? "Building your review…" : "Build my card review"} <span>↗</span>
             </button>
-            <p className="privacy-note">Photos are processed in memory and not stored by this app.</p>
+            <p className="privacy-note">Your photo isn’t stored here. This is a visual guide, not a professional grade.</p>
           </section>
-          {error && <div className="error-box" role="alert"><strong>Couldn’t complete the review</strong><span>{error}</span></div>}
         </aside>
       </form>
 
       <input ref={uploadInput} hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={chooseFile} />
-      <input ref={cameraInput} hidden type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={chooseFile} />
+      {error && (
+        <div className="error-backdrop">
+          <section className="error-dialog" role="alertdialog" aria-modal="true" aria-labelledby="error-title" aria-describedby="error-description">
+            <div className="error-heading">
+              <span className="error-symbol" aria-hidden="true">!</span>
+              <h2 id="error-title">Couldn’t complete the review</h2>
+            </div>
+            <p id="error-description">{error}</p>
+            <button ref={errorCloseButton} type="button" className="error-dismiss" onClick={() => setError("")}>Close</button>
+          </section>
+        </div>
+      )}
+      {cameraOpen && (
+        <div className="camera-backdrop">
+          <section className="camera-dialog" role="dialog" aria-modal="true" aria-labelledby="camera-title">
+            <div className="camera-heading"><h2 id="camera-title">Take a card photo</h2><button type="button" aria-label="Close camera" onClick={closeCamera}>×</button></div>
+            {cameraError ? <p className="camera-error" role="alert">{cameraError}</p> : <video ref={cameraVideo} autoPlay playsInline muted />}
+            <div className="camera-actions">
+              <button type="button" className="camera-cancel" onClick={closeCamera}>Cancel</button>
+              <button type="button" className="camera-capture" onClick={capturePhoto} disabled={Boolean(cameraError)}>Take picture</button>
+            </div>
+          </section>
+        </div>
+      )}
       {result && <Result result={result} />}
       <footer>
-        <a className="footer-brand" href="#" aria-label="A-Eye home"><span className="brand-mark">A</span> A-Eye</a>
-        <span>PRELIMINARY OBSERVATIONS ONLY · NOT AN OFFICIAL GRADE OR FINANCIAL GUARANTEE</span>
+        <span>Preliminary observations only—not an official grade or financial guarantee.</span>
       </footer>
     </main>
   );
 }
 
-function MoneyField({ label, name, value, onChange }) {
-  return <label className="money-field"><span>{label}</span><div><span>€</span><input type="number" min="0" step="0.01" required value={value} onChange={(event) => onChange(name, event.target.value)} /></div></label>;
-}
-
 function Result({ result }) {
-  const comparison = result.profit_comparison;
+  const centering = result.centering;
   return (
     <section className="results">
-      <div className="results-header"><div><span className="step">YOUR CARD REPORT</span><h2>Here’s what we found.</h2></div><span className="quality-badge"><i /> PHOTO CHECK PASSED</span></div>
-      <div className="results-grid">
-        <article className="result-card centering-card">
-          <span className="result-label">01 / GEOMETRY</span>
-          <h3>Centering</h3>
-          <div className="ratio-row"><span>Left : right</span><strong>{result.centering.left_right_ratio}</strong></div>
-          <div className="ratio-row"><span>Top : bottom</span><strong>{result.centering.top_bottom_ratio}</strong></div>
-          <p>Measured from your corner selections after perspective correction.</p>
-        </article>
-        <article className="result-card economics-card">
-          <span className="result-label">02 / NET COMPARISON</span>
-          <h3>Sell raw or submit?</h3>
-          <div className="ratio-row"><span>Sell raw</span><strong>{money(comparison.raw_net)}</strong></div>
-          {Object.entries(comparison.graded_net_by_grade).map(([grade, net]) => <div className="ratio-row" key={grade}><span>If graded {grade}</span><strong>{money(net)}</strong></div>)}
-          <div className="recommendation">{comparison.recommendation}</div>
-          <p>{comparison.disclaimer}</p>
-        </article>
-      </div>
+      <div className="results-header"><h2>Review and supporting evidence</h2><span className="quality-badge"><i /> PHOTO CHECK PASSED</span></div>
+      <article className="result-card">
+        <h3>Card outline</h3>
+        <p>The four marked outside corners identify the card and correct perspective for the centering estimate.</p>
+      </article>
+      <article className="result-card centering-card">
+        <h3>Centering estimate</h3>
+        <p>Opposing inner-border margins are compared after correcting the card’s perspective.</p>
+        <div className="centering-ratios">
+          <div><span>Left : right</span><strong>{centering.left_right_ratio}</strong><small>{centering.left_margin_percent}% : {centering.right_margin_percent}% of card width</small></div>
+          <div><span>Top : bottom</span><strong>{centering.top_bottom_ratio}</strong><small>{centering.top_margin_percent}% : {centering.bottom_margin_percent}% of card height</small></div>
+        </div>
+      </article>
       <article className="result-card vision-card">
-        <div><span className="result-label">03 / VISIBLE CONDITION</span><h3>What the photo may show</h3></div>
-        {!result.vision ? <p className="no-ai">AI observations weren’t requested. Centering and the price comparison are still available.</p> : (
+        <div><h3>Photo observations</h3></div>
+        {!result.vision ? <p className="no-ai">The optional photo condition review wasn’t used. This report includes basic photo checks, the card outline, and a centering estimate; surface and edge condition were not assessed.</p> : (
           <>
-            <div className="defect-list">{result.vision.defects.map((defect) => (
-              <div className="defect" key={defect.type}>
-                <span className={defect.observed ? "defect-state observed" : "defect-state"}>{defect.observed ? "Possible" : "Not seen"}</span>
-                <div><strong>{defectLabels[defect.type]}</strong><p>{defect.evidence || "No visible evidence noted."}</p></div>
-                <span className="confidence">{defect.confidence}</span>
+            <div className="defect-list">{Object.entries(result.vision.defects).map(([type, defect]) => (
+              <div className="defect" key={type}>
+                <span className={defect.present ? "defect-state observed" : "defect-state"}>{defect.present ? "Possible" : "Not seen"}</span>
+                <div><strong>{defectLabels[type]}</strong><p>{defect.evidence || "No visible evidence noted."}</p></div>
+                <span className="confidence">{(defect.confidence * 100).toFixed(0)}%</span>
               </div>
             ))}</div>
-            <p>{result.vision.confidence_note}</p>
+            <p>Model-reported confidence is not a calibrated probability.</p>
           </>
         )}
+      </article>
+      <article className="result-card explanation-card">
+        <h3>What each part means</h3>
+        <div className="explanation-list">
+          {result.review_basis.map((item) => (
+            <div className="explanation-item" key={item.factor}>
+              <span className="explanation-bullet" aria-hidden="true" />
+              <div><strong>{item.factor}</strong><p>{item.explanation}</p><small>{item.result}</small></div>
+            </div>
+          ))}
+        </div>
+        <p className="grade-caveat">{result.grade_note}</p>
       </article>
       <div className="limitations"><strong>Keep in mind</strong><ul>{result.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul></div>
     </section>

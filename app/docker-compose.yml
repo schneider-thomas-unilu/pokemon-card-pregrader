@@ -4,8 +4,8 @@ services:
   backend:
     image: pokemon-card-pregrader-backend:local
     build:
-      context: ..
-      dockerfile: app/backend/Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
@@ -33,8 +33,8 @@ services:
   frontend:
     image: pokemon-card-pregrader-frontend:local
     build:
-      context: ..
-      dockerfile: app/frontend/Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
     ports:
       - "${APP_PORT:-8080}:80"
     depends_on:

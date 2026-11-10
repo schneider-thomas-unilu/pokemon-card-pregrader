@@ -11,7 +11,7 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-Open [http://localhost:8080](http://localhost:8080). The API key is optional; without one, centering and the user-input profit comparison still work. Add `GEMINI_API_KEY` to `.env` to enable optional vision observations. The app asks before sending the photo to Gemini.
+Open [http://localhost:8080](http://localhost:8080). The API key is optional; centering and photo-quality checks work without it. Add `GEMINI_API_KEY` to `.env` to enable optional condition observations. The app asks before sending the photo to Gemini.
 
 For frontend development with Docker hot reload, run from `app/`:
 
@@ -59,10 +59,12 @@ python -m app.backend.main.health_monitor --url http://127.0.0.1:8000/health --i
 ## MVP scope and limitations
 
 - Uploads JPEG, PNG, or WebP (10 MB default), performs basic image size, exposure, and focus checks, and gives retake guidance.
-- Photo input supports selecting an existing image or opening a device camera on supported phones and browsers.
-- The user marks the four outer card corners and four inner-border corners. The backend uses the experiment's existing perspective-corrected centering implementation.
+- Photo input supports selecting an existing image or opening a live camera preview to take a picture. Camera access requires browser permission and HTTPS or localhost.
+- The user marks the four outside card corners and four inner printed-border corners. The app rectifies perspective and estimates opposing border ratios; accuracy depends on manually selected landmarks.
 - Optional Gemini image analysis reports possible visible condition issues. It is not run unless selected and confirmed; the photo is sent to the configured provider and is not stored by this app.
-- The raw-vs-grade-7/8 comparison uses the prices and costs entered by the user. It is an illustrative calculation, not a price feed or financial recommendation.
-- The MVP does not predict a grade or estimate grade likelihood. Model-reported confidence is not calibrated; photos can miss defects, and centering depends on manual landmarks.
+- The app backend contains its own Gemini prompt, defect categories, response schema, and centering implementation. The experiment is a separate project and is not included in the app's Docker build context or runtime.
+- If Gemini rejects an analysis request, the error popup includes its response body (limited to 4,000 bytes, with the API key redacted) to help diagnose the problem.
+- The report explains the photo-quality check, card outline, centering estimate, and whether condition observations were performed.
+- The MVP does not assign a numerical grade: it has no calibrated grading model or validated thresholds. Model-reported confidence is not calibrated; photos can miss defects, and centering depends on manual landmarks.
 
 The app does not authenticate cards or provide an official grade or financial guarantee.

@@ -18,17 +18,12 @@ from urllib.request import Request, urlopen
 
 if __package__ == "experiment":
     from .centering import read_centering_measurements
+    from .gemini_contract import DEFECT_TYPES, GEMINI_PROMPT, gemini_response_schema
 else:
     from centering import read_centering_measurements
+    from gemini_contract import DEFECT_TYPES, GEMINI_PROMPT, gemini_response_schema
 
 
-DEFECT_TYPES = (
-    "corner_wear",
-    "edge_wear",
-    "surface_scratch",
-    "card_bending",
-    "other_visible_issue",
-)
 # These prototype penalties are not official grading deductions or learned coefficients.
 DEFECT_SCORE_PENALTIES = {
     "corner_wear": 0.5,
@@ -373,41 +368,13 @@ def request_model(
     if mime_type not in {"image/jpeg", "image/png", "image/webp"}:
         raise ValueError(f"Could not determine a supported image format: {case.image_path}")
     encoded_image = base64.b64encode(case.image_path.read_bytes()).decode("ascii")
-    properties = {
-        defect: {
-            "type": "OBJECT",
-            "properties": {
-                "present": {"type": "BOOLEAN"},
-                "confidence": {"type": "NUMBER"},
-                "evidence": {"type": "STRING"},
-            },
-            "required": ["present", "confidence", "evidence"],
-        }
-        for defect in DEFECT_TYPES
-    }
     request_body = {
         "contents": [
             {
                 "role": "user",
                 "parts": [
                     {
-                        "text": (
-                            "Inspect this Pokémon card photo for visible corner wear, "
-                            "edge wear, surface scratches, and card bending. For card_bending, "
-                            "report only visible creases, folds, or warping; do not infer a "
-                            "bend from perspective, a hand holding the card, or reflections. "
-                            "A single front photo cannot rule out hidden bends, so state that "
-                            "limitation in the evidence when relevant. Also report "
-                            "other_visible_issue only for visible discoloration, stains, dents, "
-                            "print defects, or similar issues not covered by the four named "
-                            "categories. Do not count ordinary card design or holographic "
-                            "patterns as defects. Do not assess centering; "
-                            "it will be measured separately with image geometry. Mark a defect "
-                            "present only when visible evidence supports it. Reflections alone "
-                            "are not proof of scratches. Return a short evidence note and a "
-                            "self-assessed confidence from 0 to 1 for each category. This is "
-                            "not an official grade."
-                        )
+                        "text": GEMINI_PROMPT
                     },
                     # Send the original photo inline; the runner does not upload it elsewhere.
                     {"inlineData": {"mimeType": mime_type, "data": encoded_image}},
@@ -417,17 +384,7 @@ def request_model(
         "generationConfig": {
             "temperature": 0,
             "responseMimeType": "application/json",
-            "responseSchema": {
-                "type": "OBJECT",
-                "properties": {
-                    "defects": {
-                        "type": "OBJECT",
-                        "properties": properties,
-                        "required": list(DEFECT_TYPES),
-                    }
-                },
-                "required": ["defects"],
-            },
+            "responseSchema": gemini_response_schema(),
         },
     }
     request = Request(

@@ -12,20 +12,29 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from PIL import Image, ImageFilter, ImageStat, UnidentifiedImageError
 from starlette.concurrency import run_in_threadpool
 
-from experiment.centering import calculate_centering
-
+from ..services.centering import calculate_centering
+from ..services.gemini_contract import (
+    DEFECT_TYPES,
+    GEMINI_PROMPT,
+    gemini_response_schema,
+)
 
 router = APIRouter(prefix="/api")
 MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "10"))
 MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 ALLOWED_FORMATS = {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp"}
-DEFECT_TYPES = (
-    "corner_wear",
-    "edge_wear",
-    "surface_scratch",
-    "bend_or_crease",
-    "other_visible_issue",
-)
+MAX_PROVIDER_ERROR_BODY_BYTES = 4000
+
+
+def _format_provider_error_body(body: bytes, api_key: str) -> str:
+    truncated = len(body) > MAX_PROVIDER_ERROR_BODY_BYTES
+    text = body[:MAX_PROVIDER_ERROR_BODY_BYTES].decode("utf-8", errors="replace")
+    text = "".join(character for character in text if character.isprintable() or character in "\n\t")
+    if api_key:
+        text = text.replace(api_key, "[redacted]")
+    if truncated:
+        text += "\n… (response body truncated)"
+    return text or "Gemini did not include an error response body."
 
 
 def _read_points(value: str, label: str) -> tuple[tuple[float, float], ...]:
@@ -71,48 +80,6 @@ def _quality_gate(image: Image.Image) -> list[str]:
     return reasons
 
 
-def _validate_assumptions(
-    raw_sale: float,
-    grade_7: float,
-    grade_8: float,
-    grading_fee: float,
-    shipping: float,
-    selling_cost: float,
-) -> dict[str, Any]:
-    values = (raw_sale, grade_7, grade_8, grading_fee, shipping, selling_cost)
-    if any(not math.isfinite(value) or value < 0 for value in values):
-        raise HTTPException(
-            status_code=422,
-            detail="Price and cost assumptions must be finite and non-negative.",
-        )
-    raw_net = raw_sale - selling_cost
-    graded_nets = {
-        "7": grade_7 - grading_fee - shipping - selling_cost,
-        "8": grade_8 - grading_fee - shipping - selling_cost,
-    }
-    best_grade = max(graded_nets, key=graded_nets.get)
-    best_graded_net = graded_nets[best_grade]
-    return {
-        "currency": "EUR",
-        "assumptions": {
-            "raw_sale": raw_sale,
-            "grade_7_sale": grade_7,
-            "grade_8_sale": grade_8,
-            "grading_fee": grading_fee,
-            "shipping": shipping,
-            "selling_cost": selling_cost,
-        },
-        "raw_net": round(raw_net, 2),
-        "graded_net_by_grade": {grade: round(net, 2) for grade, net in graded_nets.items()},
-        "recommendation": (
-            f"Submit for grading (assuming grade {best_grade})"
-            if best_graded_net > raw_net
-            else "Sell raw"
-        ),
-        "disclaimer": "Illustrative comparison from your inputs; prices, grade, and outcome are uncertain.",
-    }
-
-
 def _analyze_with_gemini(image_bytes: bytes, mime_type: str) -> dict[str, Any]:
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
@@ -123,33 +90,31 @@ def _analyze_with_gemini(image_bytes: bytes, mime_type: str) -> dict[str, Any]:
 
     model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash").strip()
     encoded_image = base64.b64encode(image_bytes).decode("ascii")
-    prompt = (
-        "Inspect this single Pokémon card photo for visible condition issues only. "
-        "Do not infer hidden damage, authenticity, a professional grade, or market value. "
-        "Return JSON with a defects array containing exactly one item for each of "
-        f"{', '.join(DEFECT_TYPES)}. Each item has type, observed (boolean), evidence "
-        "(short string), and confidence (low, medium, or high). Treat reflections and "
-        "ordinary card design cautiously. A straight-on photo cannot rule out bends."
-    )
     payload = {
-        "contents": [{
-            "parts": [
-                {"text": prompt},
-                {"inline_data": {"mime_type": mime_type, "data": encoded_image}},
-            ]
-        }],
-        "generationConfig": {"responseMimeType": "application/json"},
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {"text": GEMINI_PROMPT},
+                    {"inlineData": {"mimeType": mime_type, "data": encoded_image}},
+                ],
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0,
+            "responseMimeType": "application/json",
+            "responseSchema": gemini_response_schema(),
+        },
     }
     url = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
         + urllib.parse.quote(model, safe="")
-        + ":generateContent?key="
-        + urllib.parse.quote(api_key, safe="")
+        + ":generateContent"
     )
     request = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": "application/json", "X-goog-api-key": api_key},
         method="POST",
     )
     try:
@@ -158,8 +123,13 @@ def _analyze_with_gemini(image_bytes: bytes, mime_type: str) -> dict[str, Any]:
         ) as response:
             response_body = json.loads(response.read())
     except urllib.error.HTTPError as error:
+        error_body = _format_provider_error_body(error.read(MAX_PROVIDER_ERROR_BODY_BYTES + 1), api_key)
         raise HTTPException(
-            status_code=502, detail=f"Vision provider returned HTTP {error.code}."
+            status_code=502,
+            detail={
+                "message": f"Gemini returned HTTP {error.code}.",
+                "provider_response_body": error_body,
+            },
         ) from error
     except (urllib.error.URLError, TimeoutError) as error:
         raise HTTPException(status_code=502, detail="Vision provider request failed or timed out.") from error
@@ -170,18 +140,18 @@ def _analyze_with_gemini(image_bytes: bytes, mime_type: str) -> dict[str, Any]:
         text = response_body["candidates"][0]["content"]["parts"][0]["text"]
         result = json.loads(text)
         defects = result["defects"]
-        by_type = {item["type"]: item for item in defects}
-        if set(by_type) != set(DEFECT_TYPES) or len(defects) != len(DEFECT_TYPES):
+        if not isinstance(defects, dict) or set(defects) != set(DEFECT_TYPES):
             raise ValueError("Unexpected defect categories.")
-        for item in by_type.values():
+        for item in defects.values():
             if (
-                not isinstance(item["observed"], bool)
-                or item["confidence"] not in {"low", "medium", "high"}
+                not isinstance(item["present"], bool)
+                or isinstance(item["confidence"], bool)
+                or not isinstance(item["confidence"], (int, float))
+                or not math.isfinite(item["confidence"])
+                or not 0 <= item["confidence"] <= 1
                 or not isinstance(item["evidence"], str)
             ):
                 raise ValueError("Invalid defect result.")
-        result["defects"] = [by_type[defect_type] for defect_type in DEFECT_TYPES]
-        result["confidence_note"] = "Model-reported confidence is not a calibrated probability."
         return result
     except (KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError) as error:
         raise HTTPException(
@@ -192,14 +162,8 @@ def _analyze_with_gemini(image_bytes: bytes, mime_type: str) -> dict[str, Any]:
 @router.post("/analyze")
 async def analyze_card(
     image_file: Annotated[UploadFile, File()],
-    outer_corners: Annotated[str, Form()],
+    card_corners: Annotated[str, Form()],
     inner_corners: Annotated[str, Form()],
-    raw_sale: Annotated[float, Form()] = 0,
-    grade_7_sale: Annotated[float, Form()] = 0,
-    grade_8_sale: Annotated[float, Form()] = 0,
-    grading_fee: Annotated[float, Form()] = 0,
-    shipping: Annotated[float, Form()] = 0,
-    selling_cost: Annotated[float, Form()] = 0,
     include_ai: Annotated[bool, Form()] = False,
 ) -> dict[str, Any]:
     image_bytes = await image_file.read(MAX_UPLOAD_BYTES + 1)
@@ -228,32 +192,90 @@ async def analyze_card(
             detail={"message": "Photo did not pass the basic quality check.", "retake_reasons": retake_reasons},
         )
 
-    outer = _read_points(outer_corners, "Outer card corners")
-    inner = _read_points(inner_corners, "Inner border corners")
-    if any(x < 0 or y < 0 or x > image.width or y > image.height for x, y in outer + inner):
+    corners = _read_points(card_corners, "Card corners")
+    if any(x < 0 or y < 0 or x > image.width or y > image.height for x, y in corners):
         raise HTTPException(status_code=422, detail="Selected corners must be inside the uploaded image.")
+    inner = _read_points(inner_corners, "Inner printed border")
+    if any(x < 0 or y < 0 or x > image.width or y > image.height for x, y in inner):
+        raise HTTPException(status_code=422, detail="Selected inner-border corners must be inside the uploaded image.")
     try:
-        centering = calculate_centering(outer, inner)
+        centering = calculate_centering(corners, inner)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
 
+    vision = (
+        await run_in_threadpool(
+            _analyze_with_gemini, image_bytes, ALLOWED_FORMATS[image_format]
+        )
+        if include_ai
+        else None
+    )
     result: dict[str, Any] = {
         "photo": {"width": image.width, "height": image.height, "quality": "passed_basic_checks"},
+        "card_corners": corners,
+        "inner_corners": inner,
         "centering": centering,
-        "vision": (
-            await run_in_threadpool(
-                _analyze_with_gemini, image_bytes, ALLOWED_FORMATS[image_format]
-            )
-            if include_ai
-            else None
-        ),
-        "profit_comparison": _validate_assumptions(
-            raw_sale, grade_7_sale, grade_8_sale, grading_fee, shipping, selling_cost
+        "vision": vision,
+        "review_basis": [
+            {
+                "factor": "Photo quality",
+                "explanation": (
+                    "The app checked minimum image dimensions, average brightness, "
+                    "and an edge-detail focus proxy before accepting the photo."
+                ),
+                "result": (
+                    f"Passed basic checks at {image.width} × {image.height} pixels."
+                ),
+            },
+            {
+                "factor": "Card outline",
+                "explanation": (
+                    "You marked the four outside card corners, which define the "
+                    "card plane used to correct perspective in the centering calculation."
+                ),
+                "result": "Four outside card corners marked.",
+            },
+            {
+                "factor": "Centering estimate",
+                "explanation": (
+                    "The app maps the selected inner printed-border corners into a "
+                    "front-on unit square using a projective transform, then compares "
+                    "the opposing border widths. Accuracy depends on landmark placement."
+                ),
+                "result": (
+                    f"Left:right {centering['left_right_ratio']} · "
+                    f"Top:bottom {centering['top_bottom_ratio']}."
+                ),
+            },
+            {
+                "factor": "Visible condition",
+                "explanation": (
+                    "When enabled, Gemini reviews this photo for possible visible "
+                    "wear and reports evidence with model-reported confidence. "
+                    "This confidence is not calibrated."
+                    if vision
+                    else "AI analysis was not requested. No surface, corner, or edge condition assessment was performed."
+                ),
+                "result": (
+                    f"{sum(item['present'] for item in vision['defects'].values())} possible "
+                    "visible issue categories noted; see findings above."
+                    if vision
+                    else "Not assessed."
+                ),
+            },
+        ],
+        "grade_note": (
+            "No numerical grade is assigned. This MVP has no calibrated grading "
+            "model or validated thresholds to turn a single photo into a reliable "
+            "professional grade. Centering ratios are manual photo measurements, "
+            "not a professional grade or an assessment of other card condition. "
+            "The photo checks, centering estimate, and optional visible-condition "
+            "observations above are the evidence available for this review."
         ),
         "limitations": [
             "This is a preliminary photo-based aid, not an official grade or authentication.",
             "Only visible areas in this photo can be assessed; hidden or angle-dependent defects may be missed.",
-            "Centering is based on manually selected landmarks and may be inaccurate if they are misplaced.",
+            "Centering is estimated from manually selected corners; inaccurate landmarks, glare, perspective, or an unclear printed border can affect the result.",
         ],
     }
     return result
