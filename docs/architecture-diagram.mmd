@@ -1,0 +1,56 @@
+flowchart LR
+    user(["Collector<br/>Upload / camera · mark corners"])
+
+    subgraph app["A-Eye · Docker Compose"]
+        direction LR
+
+        subgraph client["Browser"]
+            direction LR
+            ui["React 18 · Vite 6<br/>Production: Nginx"]
+            browser[("Temporary photo,<br/>landmarks & result")]
+            ui <-->|"Local UI state"| browser
+        end
+
+        subgraph backend["Backend · Python 3.12"]
+            direction TB
+            api["FastAPI<br/>POST /api/analyze"]
+            analysis["Photo checks + centering<br/>services/centering.py"]
+            api --> analysis
+
+            config["Prompt/schema: services/gemini_contract.py<br/>Model: GEMINI_MODEL · default gemini-3.8-flash<br/>Secret: GEMINI_API_KEY · ignored app/.env → backend only"]
+            config --> api
+        end
+
+        memory[("Ephemeral only<br/>Browser state + API request memory<br/>No database or persistent photo store")]
+        analysis --> memory
+    end
+
+    subgraph google["Google · outside A-Eye"]
+        gemini["Gemini · Generative Language API v1beta<br/>models/{GEMINI_MODEL}:generateContent<br/>gemini-3.8-flash"]
+    end
+
+    user --> ui
+    ui -->|"Photo + corners + opt-in flag"| api
+    analysis -->|"Review JSON"| ui
+    api -->|"AI opt-in: photo + prompt/schema<br/>API key header"| gemini
+    gemini -->|"Defects + evidence + confidence"| api
+
+    classDef userStyle fill:#e8f5fc,stroke:#58a7d1,color:#173449,stroke-width:1.5px
+    classDef clientStyle fill:#edf8fd,stroke:#69afd0,color:#173449
+    classDef serviceStyle fill:#ffffff,stroke:#8daebf,color:#173449
+    classDef storeStyle fill:#f2f7fa,stroke:#9bb8c6,color:#173449
+    classDef configStyle fill:#fff8e8,stroke:#d7ad58,color:#563f16
+    classDef monitorStyle fill:#edf8f2,stroke:#80ad91,color:#234533
+    classDef externalStyle fill:#fff3ef,stroke:#d98777,color:#63372f
+    class user userStyle
+    class ui clientStyle
+    class api,analysis serviceStyle
+    class browser,memory storeStyle
+    class config configStyle
+    class monitor monitorStyle
+    class gemini externalStyle
+    style app fill:#f7fbfd,stroke:#247ba0,stroke-width:2px
+    style client fill:#f1f9fd,stroke:#83b9d1,stroke-width:1px
+    style backend fill:#f9fcfd,stroke:#9ab4c1,stroke-width:1px
+    style google fill:#fff9f7,stroke:#c85a4b,stroke-width:2px,stroke-dasharray:6 4
+    linkStyle 7,8 stroke:#c85a4b,stroke-width:2px,color:#a33b2d

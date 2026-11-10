@@ -2,6 +2,8 @@
 
 React + Vite frontend and FastAPI backend for the first Pokémon Card PreGrader workflow.
 
+See the [application architecture diagram](../docs/architecture-diagram.svg) for components, data flows, Gemini disclosure, and secret handling. The editable Mermaid source is [architecture-diagram.mmd](../docs/architecture-diagram.mmd).
+
 ## Run with Docker Compose
 
 From `app/`:
@@ -20,14 +22,6 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
 Open [http://localhost:5173](http://localhost:5173). The dev service bind-mounts `frontend/`; Vite watches mounted files with polling and pushes updates to the browser. Stop it with the same two compose files and `down`. Change the browser port with `DEV_APP_PORT` in `.env`.
-
-The `health-monitor` service polls `/health` every 20 seconds by default and prints timestamped pass/fail messages to stdout. `docker compose up` shows these alongside the API logs. To follow them later, run:
-
-```powershell
-docker compose logs -f backend health-monitor
-```
-
-Set `HEALTH_CHECK_INTERVAL_SECONDS` and `HEALTH_CHECK_TIMEOUT_SECONDS` in `.env` to change the polling cadence and timeout.
 
 ## Run locally without Docker
 
@@ -49,12 +43,6 @@ npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173). To use Gemini, set `GEMINI_API_KEY` in the environment before starting the backend.
-
-To run the same health monitor in a separate terminal from the repository root:
-
-```powershell
-python -m app.backend.main.health_monitor --url http://127.0.0.1:8000/health --interval 20
-```
 
 ## MVP scope and limitations
 

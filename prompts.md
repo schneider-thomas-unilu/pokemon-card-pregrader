@@ -16,3 +16,16 @@
 14. can you add centering calculation, if you need to re add the inner printed border
 15. can you decouple the experiment from the main app. I don't want any dependencies on the experiment folder
 16. make the dots on the corner selection and inner corner selection much smaller
+17. Can you generate a architecture diagram with these important points:
+Architecture diagram: what it must show
+One diagram, made with a diagramming tool (draw.io, Excalidraw, Mermaid, PlantUML), exported as PNG or
+SVG into the repository and referenced from the README. Hand-drawn diagrams are not accepted in the
+final package. It must show:
+the user-facing parts, the services you wrote, and your data stores
+every external API and model by name and version (for example gpt-4o-mini , whisper-large-v3 )
+where prompts and model configuration live
+the direction of data flow between components
+a marked boundary showing which data leaves your system and to whom
+how secrets are handled
+18. can you optimize it and make it more visually appealing, try to condense text
+19. remove health check completely from the project, it is unecessary for this project

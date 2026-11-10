@@ -20,8 +20,11 @@ This is an early-stage experiment, not a production application. The manual one-
 - [Submission summary](docs/submission-summary.md)
 - [Approach comparison](docs/approach-comparison.md)
 - [Architecture sketch](docs/architecture.md)
+- [Application architecture diagram (SVG)](docs/architecture-diagram.svg) — React, FastAPI, data flow, Gemini boundary, and secret handling. Editable Mermaid source: [architecture-diagram.mmd](docs/architecture-diagram.mmd).
 - [Cost estimate](docs/cost-estimate.md)
 - [Decision and MVP plan](docs/decision-and-mvp-plan.md)
+
+![A-Eye application architecture diagram](docs/architecture-diagram.svg)
 
 ## Experiment
 
@@ -52,7 +55,7 @@ The notebook was developed in Google Colab; its earlier manual ChatGPT-interface
 
 ## First app MVP
 
-The first React and FastAPI application is in [`app/`](app/README.md). Run it with Docker Compose from that folder; Gemini vision is optional and requires a `GEMINI_API_KEY`. The app measures centering from manually selected landmarks and compares user-entered raw and graded sale assumptions. It does not predict an official grade.
+The first React and FastAPI application is in [`app/`](app/README.md). Run it with Docker Compose from that folder; Gemini vision is optional and requires a `GEMINI_API_KEY`. See the [application architecture diagram](docs/architecture-diagram.svg) for services, data flows, external-provider disclosure, and secret handling. The app measures centering from manually selected landmarks and does not predict an official grade.
 
 ## First app MVP
 

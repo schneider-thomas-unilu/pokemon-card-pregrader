@@ -14,8 +14,7 @@ services:
       VITE_HMR_CLIENT_PORT: ${DEV_APP_PORT:-5173}
       API_PROXY_TARGET: http://backend:8000
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
 
 volumes:
   frontend_node_modules:

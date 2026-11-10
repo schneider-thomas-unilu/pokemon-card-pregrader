@@ -14,7 +14,6 @@ export default defineConfig({
     },
     proxy: {
       "/api": process.env.API_PROXY_TARGET ?? "http://localhost:8000",
-      "/health": process.env.API_PROXY_TARGET ?? "http://localhost:8000",
     },
   },
 });

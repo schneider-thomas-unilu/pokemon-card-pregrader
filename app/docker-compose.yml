@@ -13,22 +13,6 @@ services:
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
     expose:
       - "8000"
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
-      interval: 20s
-      timeout: 5s
-      retries: 3
-
-  health-monitor:
-    image: pokemon-card-pregrader-backend:local
-    command: ["python", "-u", "-m", "backend.main.health_monitor"]
-    environment:
-      HEALTH_CHECK_URL: http://backend:8000/health
-      HEALTH_CHECK_INTERVAL_SECONDS: ${HEALTH_CHECK_INTERVAL_SECONDS:-20}
-      HEALTH_CHECK_TIMEOUT_SECONDS: ${HEALTH_CHECK_TIMEOUT_SECONDS:-5}
-    depends_on:
-      backend:
-        condition: service_healthy
 
   frontend:
     image: pokemon-card-pregrader-frontend:local
@@ -39,4 +23,4 @@ services:
       - "${APP_PORT:-8080}:80"
     depends_on:
       backend:
-        condition: service_healthy
+        condition: service_started
