@@ -380,7 +380,6 @@ function startPan(event) {
                 <div className="image-overlay">
                   {(outerPath || innerPath) && (
                     <svg className="image-outline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                      {outerPath && <path className="card-outline-halo" d={outerPath} />}
                       {outerPath && <path className="card-outline-line" d={outerPath} />}
                       {innerPath && <path className="inner-outline-line" d={innerPath} />}
                     </svg>
