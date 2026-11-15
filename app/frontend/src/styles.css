@@ -88,8 +88,15 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .landmark-controls { padding-top: 20px; }
 .landmark-topline { display: flex; justify-content: space-between; align-items: end; }
 .landmark-topline strong { display: block; font-size: 16px; }
-.mark-actions { display: flex; gap: 8px; margin-top: 14px; align-items: center; }
-.mark-tab { border: 1px solid var(--line); background: #12153c; color: var(--muted); border-radius: 9px; padding: 8px 14px; font-size: 13.5px; font-weight: 600; }
+.mark-actions { display: flex; gap: 8px; margin-top: 14px; padding-bottom: 10px; align-items: center; }
+.mark-tab { position: relative; border: 1px solid var(--line); background: #12153c; color: var(--muted); border-radius: 9px; padding: 8px 14px; font-size: 13.5px; font-weight: 600; }
+.mark-tab:hover:not(:disabled) { border-color: var(--line-2); }
+.mark-tab.active { background: #262c7a; border-color: var(--accent); color: var(--ink); }
+.mark-tab:disabled { opacity: .45; cursor: not-allowed; }
+.mark-tab::after { content: ""; position: absolute; left: 50%; bottom: -8px; width: 28px; height: 3px; border-radius: 2px; transform: translateX(-50%); opacity: .55; transition: width .15s, opacity .15s; }
+.outer-tab::after { background: var(--accent); }
+.inner-tab::after { background: var(--warn); }
+.mark-tab.active::after { width: 48px; opacity: 1; }
 .mark-tab:hover:not(:disabled) { border-color: var(--line-2); }
 .mark-tab.active { background: #262c7a; border-color: var(--accent); color: var(--ink); }
 .mark-tab:disabled { opacity: .45; cursor: not-allowed; }

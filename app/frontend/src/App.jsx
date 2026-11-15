@@ -397,8 +397,8 @@ function startPan(event) {
                 <div><strong>Mark the card borders, clockwise</strong></div>
               </div>
               <div className="mark-actions">
-                <button type="button" className={`mark-tab${activeLandmark === "outer" ? " active" : ""}`} onClick={() => setActiveLandmark("outer")}>Outside corners ({outer.length}/4)</button>
-                <button type="button" className={`mark-tab${activeLandmark === "inner" ? " active" : ""}`} onClick={() => setActiveLandmark("inner")} disabled={outer.length !== 4}>Inner printed border ({innerCorners.length}/4)</button>
+                <button type="button" className={`mark-tab outer-tab${activeLandmark === "outer" ? " active" : ""}`} onClick={() => setActiveLandmark("outer")}>Outside corners ({outer.length}/4)</button>
+                <button type="button" className={`mark-tab inner-tab${activeLandmark === "inner" ? " active" : ""}`} onClick={() => setActiveLandmark("inner")} disabled={outer.length !== 4}>Inner printed border ({innerCorners.length}/4)</button>
                 <button type="button" className="text-button" onClick={resetActivePoints}>Reset points</button>
               </div>
               <p className="next-point">
