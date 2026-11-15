@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import logo from "./logo.svg";
 
 const defectLabels = {
   corner_wear: "Corner wear",
@@ -241,7 +242,7 @@ export default function App() {
     <main className="shell">
       <header className="topbar">
         <a className="brand" href="#" aria-label="A-Eye home">
-          <span className="brand-mark">A</span>
+          <img className="brand-logo" src={logo} alt="" width="144" height="144" />
           <span>A-Eye</span>
         </a>
       </header>
