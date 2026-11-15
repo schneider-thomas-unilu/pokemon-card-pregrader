@@ -15,6 +15,8 @@ function landmarkPath(points, size) {
 }
 
 export default function App() {
+  const imageRef = useRef(null);
+  const justDragged = useRef(false);
   const uploadInput = useRef(null);
   const cameraVideo = useRef(null);
   const cameraStream = useRef(null);
@@ -129,6 +131,7 @@ export default function App() {
   }
 
   function selectLandmark(event) {
+    if (justDragged.current) return;
     const activePoints = activeLandmark === "outer" ? outer : innerCorners;
     if (!previewUrl || activePoints.length >= 4) return;
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -147,6 +150,54 @@ export default function App() {
     setResult(null);
     setError("");
   }
+
+  function pointFromEvent(event) {
+  const image = imageRef.current;
+  if (!image?.naturalWidth) return null;
+  const bounds = image.getBoundingClientRect();
+  const clamp = (value, max) => Math.min(Math.max(value, 0), max);
+  return [
+    Number(clamp(((event.clientX - bounds.left) / bounds.width) * image.naturalWidth, image.naturalWidth).toFixed(2)),
+    Number(clamp(((event.clientY - bounds.top) / bounds.height) * image.naturalHeight, image.naturalHeight).toFixed(2)),
+  ];
+}
+
+function startDrag(event) {
+  const image = imageRef.current;
+  if (!image?.naturalWidth) return;
+  const bounds = image.getBoundingClientRect();
+  const scaleX = bounds.width / image.naturalWidth;
+  const scaleY = bounds.height / image.naturalHeight;
+  let best = null;
+  [["outer", outer], ["inner", innerCorners]].forEach(([kind, points]) => {
+    points.forEach(([x, y], index) => {
+      const distance = Math.hypot(bounds.left + x * scaleX - event.clientX, bounds.top + y * scaleY - event.clientY);
+      if (distance <= 16 && (!best || distance < best.distance)) best = { kind, index, distance };
+    });
+  });
+  if (!best) return;
+
+  event.preventDefault();
+  justDragged.current = true;
+
+  const move = (moveEvent) => {
+    const point = pointFromEvent(moveEvent);
+    if (!point) return;
+    const update = (points) => points.map((p, i) => (i === best.index ? point : p));
+    if (best.kind === "outer") setOuter(update);
+    else setInnerCorners(update);
+    setResult(null);
+  };
+  const end = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", end);
+    window.removeEventListener("pointercancel", end);
+    setTimeout(() => { justDragged.current = false; }, 50);
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", end);
+  window.addEventListener("pointercancel", end);
+}
 
   function resetActivePoints() {
     setOuter([]);
@@ -267,7 +318,7 @@ export default function App() {
           ) : (
             <div className="image-stage">
               <div className="image-frame">
-                <img src={previewUrl} alt="Uploaded card; click to mark the requested corners" onClick={selectLandmark} onLoad={(event) => setImageSize({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />
+                <img ref={imageRef} onPointerDown={startDrag} onDragStart={(e) => e.preventDefault()} src={previewUrl} alt="Uploaded card; click to mark the requested corners" onClick={selectLandmark} onLoad={(event) => setImageSize({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />
                 <div className="image-overlay">
                   {(outerPath || innerPath) && (
                     <svg className="image-outline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
