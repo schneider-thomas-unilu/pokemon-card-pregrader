@@ -14,8 +14,21 @@ function landmarkPath(points, size) {
   return `${points.map(([x, y], index) => `${index === 0 ? "M" : "L"} ${(x / size.width) * 100} ${(y / size.height) * 100}`).join(" ")}${points.length === 4 ? " Z" : ""}`;
 }
 
+function clampView(view) {
+  return view;
+}
+
 export default function App() {
-  const imageRef = useRef(null);
+  const stageRef = useRef(null);
+  const frameRef = useRef(null);
+  const [view, setView] = useState({ zoom: 1, x: 0, y: 0 });
+  const viewRef = useRef(view);
+
+  function applyView(next) {
+    viewRef.current = next;
+    setView(next);
+  }
+    const imageRef = useRef(null);
   const justDragged = useRef(false);
   const uploadInput = useRef(null);
   const cameraVideo = useRef(null);
@@ -57,6 +70,7 @@ export default function App() {
     setResult(null);
     setError("");
     setConfirmed(false);
+    applyView({ zoom: 1, x: 0, y: 0 });
   }
 
   function chooseFile(event) {
@@ -104,6 +118,26 @@ export default function App() {
       cameraStream.current = null;
     };
   }, [cameraOpen]);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return undefined;
+    function onWheel(event) {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      const frame = frameRef.current;
+      if (!frame) return;
+      const { zoom, x, y } = viewRef.current;
+      const nextZoom = Math.min(8, Math.max(0.2, zoom * Math.exp(-event.deltaY * 0.0015)));
+      if (nextZoom === zoom) return;
+      const rect = frame.getBoundingClientRect();
+      const px = (event.clientX - rect.left) / zoom;
+      const py = (event.clientY - rect.top) / zoom;
+      applyView(clampView({ zoom: nextZoom, x: x + px * (zoom - nextZoom), y: y + py * (zoom - nextZoom) }, frame));
+    }
+    stage.addEventListener("wheel", onWheel, { passive: false });
+    return () => stage.removeEventListener("wheel", onWheel);
+  }, [previewUrl]);
 
   function capturePhoto() {
     const video = cameraVideo.current;
@@ -163,6 +197,8 @@ export default function App() {
 }
 
 function startDrag(event) {
+  if (event.button === 1 || (event.button === 0 && event.shiftKey)) { startPan(event); return; }
+  if (event.button !== 0) return;
   const image = imageRef.current;
   if (!image?.naturalWidth) return;
   const bounds = image.getBoundingClientRect();
@@ -188,6 +224,24 @@ function startDrag(event) {
     else setInnerCorners(update);
     setResult(null);
   };
+  const end = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", end);
+    window.removeEventListener("pointercancel", end);
+    setTimeout(() => { justDragged.current = false; }, 50);
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", end);
+  window.addEventListener("pointercancel", end);
+}
+
+function startPan(event) {
+  event.preventDefault();
+  const frame = frameRef.current;
+  if (!frame) return;
+  justDragged.current = true;
+  const start = { px: event.clientX, py: event.clientY, ...viewRef.current };
+  const move = (e) => applyView(clampView({ zoom: start.zoom, x: start.x + e.clientX - start.px, y: start.y + e.clientY - start.py }, frame));
   const end = () => {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", end);
@@ -316,8 +370,12 @@ function startDrag(event) {
               <span className="photo-hint">A clear, straight-on photo helps make the review more useful.</span>
               </div>
           ) : (
-            <div className="image-stage">
-              <div className="image-frame">
+            <div className="image-stage" ref={stageRef}>
+              <div
+                className="image-frame"
+                ref={frameRef}
+                style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`, "--zoom": view.zoom }}
+              >
                 <img ref={imageRef} onPointerDown={startDrag} onDragStart={(e) => e.preventDefault()} src={previewUrl} alt="Uploaded card; click to mark the requested corners" onClick={selectLandmark} onLoad={(event) => setImageSize({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />
                 <div className="image-overlay">
                   {(outerPath || innerPath) && (
@@ -327,10 +385,11 @@ function startDrag(event) {
                       {innerPath && <path className="inner-outline-line" d={innerPath} />}
                     </svg>
                   )}
-                  {outer.map((point, index) => <span className="marker outer-marker" key={`o${index}`} style={{ left: `${imageSize ? point[0] / imageSize.width * 100 : 0}%`, top: `${imageSize ? point[1] / imageSize.height * 100 : 0}%` }} />)}
-                  {innerCorners.map((point, index) => <span className="marker inner-marker" key={`i${index}`} style={{ left: `${imageSize ? point[0] / imageSize.width * 100 : 0}%`, top: `${imageSize ? point[1] / imageSize.height * 100 : 0}%` }} />)}
+                  {outer.map((point, index) => <span className="marker outer-marker" key={`o${index}`} style={{ left: `${imageSize ? point[0] / imageSize.width * 100 : 0}%`, top: `${imageSize ? point[1] / imageSize.height * 100 : 0}%`, transform: `translate(-50%, -50%) scale(${1 / view.zoom})` }} />)}
+                  {innerCorners.map((point, index) => <span className="marker inner-marker" key={`i${index}`} style={{ left: `${imageSize ? point[0] / imageSize.width * 100 : 0}%`, top: `${imageSize ? point[1] / imageSize.height * 100 : 0}%`, transform: `translate(-50%, -50%) scale(${1 / view.zoom})` }} />)}
                 </div>
               </div>
+              {(view.zoom !== 1 || view.x !== 0 || view.y !== 0) && <button type="button" className="zoom-reset" onClick={() => applyView({ zoom: 1, x: 0, y: 0 })}>Reset view</button>}
             </div>
           )}
           {file && (

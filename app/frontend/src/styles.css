@@ -81,7 +81,10 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .marker { position: absolute; width: 12px; height: 12px; border: 2px solid #fff; box-shadow: 0 1px 4px #0009; border-radius: 50%; transform: translate(-50%, -50%); }
 .outer-marker { background: var(--primary); }
 .inner-marker { background: var(--warn); }
+.image-frame { transform-origin: 0 0; }
 
+.zoom-reset { position: absolute; top: 10px; right: 10px; padding: 6px 12px; border: 1px solid var(--line-2); border-radius: 8px; background: #1b1f58; color: var(--ink); font-size: 13px; font-weight: 600; }
+.zoom-reset:hover { border-color: var(--accent); background: #262c7a; }
 .landmark-controls { padding-top: 20px; }
 .landmark-topline { display: flex; justify-content: space-between; align-items: end; }
 .landmark-topline strong { display: block; font-size: 16px; }
