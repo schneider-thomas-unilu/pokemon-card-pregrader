@@ -161,3 +161,15 @@ To use Gemini, configure `GEMINI_API_KEY` in the environment before starting the
 - Model-reported confidence is not calibrated. Photo quality, lighting, viewing angle, and manual landmark selection can affect the results.
 
 The application does not authenticate cards or provide an official grade or financial guarantee.
+
+## Known Bugs and Limitations
+
+1. **Imprecise manual corner placement:** Selecting the four outside card corners and four inner-border corners can be difficult. Inaccurate placement can affect centering measurements.
+
+2. **Gemini 3.8 Flash availability:** The intended model is frequently overloaded or temporarily unavailable. This can delay or prevent AI analysis. An alternative supported model may be needed for testing.
+
+3. **Photo-quality sensitivity:** Glare, blur, poor lighting, and viewing angle can affect defect observations. Users may need to retake photos to obtain useful results.
+
+4. **Unvalidated AI observations:** Gemini may miss defects or identify defects that are not present. Confidence values are not calibrated probabilities, and the application does not provide an official grade.
+
+5. **Single-photo limitations:** A front-facing photo cannot reveal every bend, crease, or defect, particularly on the reverse side or when damage is visible only from an angle.

@@ -112,11 +112,14 @@ The notebook was developed in Google Colab. Its earlier manual ChatGPT-interface
 
 - The manual pilot used one card and reference labels created by one person.
 - The separate API experiment has not yet completed successfully.
-- Photo quality, glare, lighting, and viewing angle can affect observations.
-- Centering estimates depend on manually selected landmarks.
-- Gemini confidence values are not calibrated probabilities.
-- The application does not assign a validated numerical grade.
+- Manual corner placement can be imprecise and affect centering measurements.
+- Gemini 3.8 Flash can be overloaded or temporarily unavailable, preventing or delaying AI analysis.
+- Photo quality, lighting, glare, and viewing angle can affect defect observations.
+- AI observations and confidence values are not validated grading assessments.
+- A single front-facing photo cannot reveal all defects, particularly on the reverse side of a card.
 - The application does not authenticate cards or guarantee resale value.
+
+For more details, see the [application README](app/README.md).
 
 ## Next steps
 
