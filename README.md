@@ -56,11 +56,7 @@ The notebook was developed in Google Colab; its earlier manual ChatGPT-interface
 ## First app MVP
 
 The first React and FastAPI application is in [`app/`](app/README.md). Run it with Docker Compose from that folder; Gemini vision is optional and requires a `GEMINI_API_KEY`. See the [application architecture diagram](docs/architecture-diagram.svg) for services, data flows, external-provider disclosure, and secret handling. The app measures centering from manually selected landmarks and does not predict an official grade.
-
-## First app MVP
-
-The first React and FastAPI application is in [`app/`](app/README.md). Run it with Docker Compose from that folder; Gemini vision is optional and requires a `GEMINI_API_KEY`. The app measures centering from manually selected landmarks and compares user-entered raw and graded sale assumptions. It does not predict an official grade.
-
+ 
 ## Limitations
 
 The pilot uses one card and reference labels created by one person. Photo quality, glare, and viewing angle can affect observations. The app cannot guarantee a professional grade, card authenticity, or resale value.
