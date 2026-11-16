@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import logo from "./logo.svg";
 
 const defectLabels = {
   corner_wear: "Corner wear",
@@ -13,7 +14,22 @@ function landmarkPath(points, size) {
   return `${points.map(([x, y], index) => `${index === 0 ? "M" : "L"} ${(x / size.width) * 100} ${(y / size.height) * 100}`).join(" ")}${points.length === 4 ? " Z" : ""}`;
 }
 
+function clampView(view) {
+  return view;
+}
+
 export default function App() {
+  const stageRef = useRef(null);
+  const frameRef = useRef(null);
+  const [view, setView] = useState({ zoom: 1, x: 0, y: 0 });
+  const viewRef = useRef(view);
+
+  function applyView(next) {
+    viewRef.current = next;
+    setView(next);
+  }
+    const imageRef = useRef(null);
+  const justDragged = useRef(false);
   const uploadInput = useRef(null);
   const cameraVideo = useRef(null);
   const cameraStream = useRef(null);
@@ -54,6 +70,7 @@ export default function App() {
     setResult(null);
     setError("");
     setConfirmed(false);
+    applyView({ zoom: 1, x: 0, y: 0 });
   }
 
   function chooseFile(event) {
@@ -102,6 +119,26 @@ export default function App() {
     };
   }, [cameraOpen]);
 
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return undefined;
+    function onWheel(event) {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      const frame = frameRef.current;
+      if (!frame) return;
+      const { zoom, x, y } = viewRef.current;
+      const nextZoom = Math.min(8, Math.max(0.2, zoom * Math.exp(-event.deltaY * 0.0015)));
+      if (nextZoom === zoom) return;
+      const rect = frame.getBoundingClientRect();
+      const px = (event.clientX - rect.left) / zoom;
+      const py = (event.clientY - rect.top) / zoom;
+      applyView(clampView({ zoom: nextZoom, x: x + px * (zoom - nextZoom), y: y + py * (zoom - nextZoom) }, frame));
+    }
+    stage.addEventListener("wheel", onWheel, { passive: false });
+    return () => stage.removeEventListener("wheel", onWheel);
+  }, [previewUrl]);
+
   function capturePhoto() {
     const video = cameraVideo.current;
     if (!video?.videoWidth || !video.videoHeight) {
@@ -128,6 +165,7 @@ export default function App() {
   }
 
   function selectLandmark(event) {
+    if (justDragged.current) return;
     const activePoints = activeLandmark === "outer" ? outer : innerCorners;
     if (!previewUrl || activePoints.length >= 4) return;
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -146,6 +184,74 @@ export default function App() {
     setResult(null);
     setError("");
   }
+
+  function pointFromEvent(event) {
+  const image = imageRef.current;
+  if (!image?.naturalWidth) return null;
+  const bounds = image.getBoundingClientRect();
+  const clamp = (value, max) => Math.min(Math.max(value, 0), max);
+  return [
+    Number(clamp(((event.clientX - bounds.left) / bounds.width) * image.naturalWidth, image.naturalWidth).toFixed(2)),
+    Number(clamp(((event.clientY - bounds.top) / bounds.height) * image.naturalHeight, image.naturalHeight).toFixed(2)),
+  ];
+}
+
+function startDrag(event) {
+  if (event.button === 1 || (event.button === 0 && event.shiftKey)) { startPan(event); return; }
+  if (event.button !== 0) return;
+  const image = imageRef.current;
+  if (!image?.naturalWidth) return;
+  const bounds = image.getBoundingClientRect();
+  const scaleX = bounds.width / image.naturalWidth;
+  const scaleY = bounds.height / image.naturalHeight;
+  let best = null;
+  [["outer", outer], ["inner", innerCorners]].forEach(([kind, points]) => {
+    points.forEach(([x, y], index) => {
+      const distance = Math.hypot(bounds.left + x * scaleX - event.clientX, bounds.top + y * scaleY - event.clientY);
+      if (distance <= 16 && (!best || distance < best.distance)) best = { kind, index, distance };
+    });
+  });
+  if (!best) return;
+
+  event.preventDefault();
+  justDragged.current = true;
+
+  const move = (moveEvent) => {
+    const point = pointFromEvent(moveEvent);
+    if (!point) return;
+    const update = (points) => points.map((p, i) => (i === best.index ? point : p));
+    if (best.kind === "outer") setOuter(update);
+    else setInnerCorners(update);
+    setResult(null);
+  };
+  const end = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", end);
+    window.removeEventListener("pointercancel", end);
+    setTimeout(() => { justDragged.current = false; }, 50);
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", end);
+  window.addEventListener("pointercancel", end);
+}
+
+function startPan(event) {
+  event.preventDefault();
+  const frame = frameRef.current;
+  if (!frame) return;
+  justDragged.current = true;
+  const start = { px: event.clientX, py: event.clientY, ...viewRef.current };
+  const move = (e) => applyView(clampView({ zoom: start.zoom, x: start.x + e.clientX - start.px, y: start.y + e.clientY - start.py }, frame));
+  const end = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", end);
+    window.removeEventListener("pointercancel", end);
+    setTimeout(() => { justDragged.current = false; }, 50);
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", end);
+  window.addEventListener("pointercancel", end);
+}
 
   function resetActivePoints() {
     setOuter([]);
@@ -241,7 +347,7 @@ export default function App() {
     <main className="shell">
       <header className="topbar">
         <a className="brand" href="#" aria-label="A-Eye home">
-          <span className="brand-mark">A</span>
+          <img className="brand-logo" src={logo} alt="" width="144" height="144" />
           <span>A-Eye</span>
         </a>
       </header>
@@ -264,21 +370,25 @@ export default function App() {
               <span className="photo-hint">A clear, straight-on photo helps make the review more useful.</span>
               </div>
           ) : (
-            <div className="image-stage">
-              <div className="image-frame">
-                <img src={previewUrl} alt="Uploaded card; click to mark the requested corners" onClick={selectLandmark} onLoad={(event) => setImageSize({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />
+            <div className="image-stage" ref={stageRef}>
+              <div
+                className="image-frame"
+                ref={frameRef}
+                style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`, "--zoom": view.zoom }}
+              >
+                <img ref={imageRef} onPointerDown={startDrag} onDragStart={(e) => e.preventDefault()} src={previewUrl} alt="Uploaded card; click to mark the requested corners" onClick={selectLandmark} onLoad={(event) => setImageSize({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />
                 <div className="image-overlay">
                   {(outerPath || innerPath) && (
                     <svg className="image-outline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                      {outerPath && <path className="card-outline-halo" d={outerPath} />}
                       {outerPath && <path className="card-outline-line" d={outerPath} />}
                       {innerPath && <path className="inner-outline-line" d={innerPath} />}
                     </svg>
                   )}
-                  {outer.map((point, index) => <span className="marker outer-marker" key={`o${index}`} style={{ left: `${imageSize ? point[0] / imageSize.width * 100 : 0}%`, top: `${imageSize ? point[1] / imageSize.height * 100 : 0}%` }} />)}
-                  {innerCorners.map((point, index) => <span className="marker inner-marker" key={`i${index}`} style={{ left: `${imageSize ? point[0] / imageSize.width * 100 : 0}%`, top: `${imageSize ? point[1] / imageSize.height * 100 : 0}%` }} />)}
+                  {outer.map((point, index) => <span className="marker outer-marker" key={`o${index}`} style={{ left: `${imageSize ? point[0] / imageSize.width * 100 : 0}%`, top: `${imageSize ? point[1] / imageSize.height * 100 : 0}%`, transform: `translate(-50%, -50%) scale(${1 / view.zoom})` }} />)}
+                  {innerCorners.map((point, index) => <span className="marker inner-marker" key={`i${index}`} style={{ left: `${imageSize ? point[0] / imageSize.width * 100 : 0}%`, top: `${imageSize ? point[1] / imageSize.height * 100 : 0}%`, transform: `translate(-50%, -50%) scale(${1 / view.zoom})` }} />)}
                 </div>
               </div>
+              {(view.zoom !== 1 || view.x !== 0 || view.y !== 0) && <button type="button" className="zoom-reset" onClick={() => applyView({ zoom: 1, x: 0, y: 0 })}>Reset view</button>}
             </div>
           )}
           {file && (
@@ -287,8 +397,8 @@ export default function App() {
                 <div><strong>Mark the card borders, clockwise</strong></div>
               </div>
               <div className="mark-actions">
-                <button type="button" className={`mark-tab${activeLandmark === "outer" ? " active" : ""}`} onClick={() => setActiveLandmark("outer")}>Outside corners ({outer.length}/4)</button>
-                <button type="button" className={`mark-tab${activeLandmark === "inner" ? " active" : ""}`} onClick={() => setActiveLandmark("inner")} disabled={outer.length !== 4}>Inner printed border ({innerCorners.length}/4)</button>
+                <button type="button" className={`mark-tab outer-tab${activeLandmark === "outer" ? " active" : ""}`} onClick={() => setActiveLandmark("outer")}>Outside corners ({outer.length}/4)</button>
+                <button type="button" className={`mark-tab inner-tab${activeLandmark === "inner" ? " active" : ""}`} onClick={() => setActiveLandmark("inner")} disabled={outer.length !== 4}>Inner printed border ({innerCorners.length}/4)</button>
                 <button type="button" className="text-button" onClick={resetActivePoints}>Reset points</button>
               </div>
               <p className="next-point">
@@ -381,7 +491,21 @@ function Result({ result }) {
         </div>
       </article>
       <article className="result-card vision-card">
-        <div><h3>Photo observations</h3></div>
+        <div className="vision-heading">
+          <h3>Photo observations</h3>
+          {result.vision && (
+            <span className="confidence-heading">AI confidence</span>
+          )}
+        </div>
+
+        {result.vision && (
+          <p className="confidence-help">
+            <strong>Possible</strong> means the AI noticed signs of a defect.
+            <strong> Not seen</strong> means it found no clear evidence in this photo.
+            The percentage indicates how confident the AI is in its observation.
+            It is not a verified probability or a card grade.
+          </p>
+        )}
         {!result.vision ? <p className="no-ai">The optional photo condition review wasn’t used. This report includes basic photo checks, the card outline, and a centering estimate; surface and edge condition were not assessed.</p> : (
           <>
             <div className="defect-list">{Object.entries(result.vision.defects).map(([type, defect]) => (
@@ -391,7 +515,10 @@ function Result({ result }) {
                 <span className="confidence">{(defect.confidence * 100).toFixed(0)}%</span>
               </div>
             ))}</div>
-            <p>Model-reported confidence is not a calibrated probability.</p>
+            <p className="confidence-disclaimer">
+              AI confidence is not calibrated. Photo quality, lighting and viewing angle
+              can affect these observations. Review the evidence yourself.
+            </p>
           </>
         )}
       </article>
