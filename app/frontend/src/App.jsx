@@ -491,7 +491,21 @@ function Result({ result }) {
         </div>
       </article>
       <article className="result-card vision-card">
-        <div><h3>Photo observations</h3></div>
+        <div className="vision-heading">
+          <h3>Photo observations</h3>
+          {result.vision && (
+            <span className="confidence-heading">AI confidence</span>
+          )}
+        </div>
+
+        {result.vision && (
+          <p className="confidence-help">
+            <strong>Possible</strong> means the AI noticed signs of a defect.
+            <strong> Not seen</strong> means it found no clear evidence in this photo.
+            The percentage indicates how confident the AI is in its observation.
+            It is not a verified probability or a card grade.
+          </p>
+        )}
         {!result.vision ? <p className="no-ai">The optional photo condition review wasn’t used. This report includes basic photo checks, the card outline, and a centering estimate; surface and edge condition were not assessed.</p> : (
           <>
             <div className="defect-list">{Object.entries(result.vision.defects).map(([type, defect]) => (
@@ -501,7 +515,10 @@ function Result({ result }) {
                 <span className="confidence">{(defect.confidence * 100).toFixed(0)}%</span>
               </div>
             ))}</div>
-            <p>Model-reported confidence is not a calibrated probability.</p>
+            <p className="confidence-disclaimer">
+              AI confidence is not calibrated. Photo quality, lighting and viewing angle
+              can affect these observations. Review the evidence yourself.
+            </p>
           </>
         )}
       </article>

@@ -144,6 +144,49 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .centering-ratios strong { color: var(--accent-soft); font-size: 26px; letter-spacing: -.02em; }
 .centering-ratios small { color: var(--muted); font-size: 12.5px; }
 .no-ai { padding: 12px 14px; background: var(--inset); border-radius: 10px; }
+/* AI confidence explanation */
+.vision-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vision-heading h3 {
+  margin-bottom: 0;
+}
+
+.confidence-heading {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  white-space: nowrap;
+}
+
+.confidence-help {
+  margin: 12px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--inset);
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.confidence-help strong {
+  color: var(--accent-soft);
+  font-weight: 600;
+}
+
+.confidence-disclaimer {
+  margin-top: 12px !important;
+  font-size: 12px !important;
+  line-height: 1.5;
+}
+
 .defect-list { border-top: 1px solid var(--line); margin-top: 10px; }
 .defect { display: grid; grid-template-columns: 90px 1fr 50px; gap: 10px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .defect-state, .confidence { color: var(--muted); font-size: 13px; }
